@@ -8,6 +8,7 @@ public class GenerativePhoneSystem extends ScriptableService {
     private let uiBlackboard: wref<IBlackboard>;
     private let widgetInstance: wref<inkWidget>;
     private let parent: wref<inkCanvas>;
+    private let chatContainer: wref<inkCanvas>;
 
     private cb func OnLoad() {
         this.InitializeSystem();
@@ -56,13 +57,12 @@ public class GenerativePhoneSystem extends ScriptableService {
 
     public func togglePanamSelected(value: Bool) {
         this.panamSelected = value;
-        LogChannel(n"DEBUG", s"Panam selected: \(this.panamSelected)");
     }
 
     private func ShowModChat() {
         this.chatOpen = true;
+        this.BuildChatUi();
         LogChannel(n"DEBUG", "Showing mod chat...");
-
     }
 
     private func HideModChat() {
@@ -89,14 +89,40 @@ public class GenerativePhoneSystem extends ScriptableService {
 
     private func SetupChatContainer() {
         if this.parent.GetNumChildren() > 14 {
-            ConsoleLog("Removing existing mod messenger slot...");
             this.parent.RemoveChildByName(n"mod_messenger_slot");
         }
 
         let modMessengerSlot = new inkCanvas();
         modMessengerSlot.Reparent(this.parent);
-        modMessengerSlot.SetMargin(new inkMargin(1400.0, 480.0, 0.0, 0.0));
+        modMessengerSlot.SetMargin(new inkMargin(80.0, 480.0, 0.0, 0.0));
         modMessengerSlot.SetChildOrder(inkEChildOrder.Backward);
         modMessengerSlot.SetName(n"mod_messenger_slot");
+        this.chatContainer = modMessengerSlot;
+    }
+
+    private func BuildChatUi() {
+        ConsoleLog("Building chat UI...");
+
+        let modMessengerSlotRoot = new inkCanvas();
+        modMessengerSlotRoot.SetName(n"Root");
+        modMessengerSlotRoot.SetStyle(r"base\\gameplay\\gui\\common\\styles\\panel.inkstyle");
+        modMessengerSlotRoot.BindProperty(n"tintColor", n"MainColors.Blue");
+        modMessengerSlotRoot.SetChildOrder(inkEChildOrder.Backward);
+        modMessengerSlotRoot.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        modMessengerSlotRoot.SetSize(new Vector2(1500.0, 1500.0));
+        modMessengerSlotRoot.Reparent(this.chatContainer);
+
+        let rootContainer = new inkCanvas();
+        rootContainer.SetName(n"container");
+        rootContainer.SetMargin(new inkMargin(100.0, 0.0, 0.0, 0.0));
+        rootContainer.SetSize(new Vector2(1550.0, 1200.0));
+        rootContainer.SetChildOrder(inkEChildOrder.Backward);
+        rootContainer.Reparent(modMessengerSlotRoot);
+
+        let rootWrapper = new inkVerticalPanel();
+        rootWrapper.SetName(n"wrapper");
+        rootWrapper.SetMargin(new inkMargin(100.0, 50.0, 0.0, 0.0));
+        rootWrapper.SetFitToContent(true);
+        rootWrapper.Reparent(modMessengerSlotRoot);
     }
 }

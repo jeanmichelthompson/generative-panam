@@ -16,11 +16,9 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
             // Assuming m_contactList is the main container holding all contact entries
             let contactListWidget = inkWidgetRef.Get(this.m_contactsList) as inkCompoundWidget;
             if IsDefined(contactListWidget) {
-                ConsoleLog("contactListWidget found. Scanning for Panam's hints_holder...");
 
                 let numChildren = contactListWidget.GetNumChildren();
                 let i = 0;
-                ConsoleLog("Iterating through contact entries...");
                 while i < numChildren {
                     let contactEntry = contactListWidget.GetWidgetByIndex(i) as inkCompoundWidget;
                     if IsDefined(contactEntry) {
@@ -28,12 +26,10 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                         // Check if this entry corresponds to Panam's hints_holder
                         let contactLabel = FindWidgetWithName(contactEntry, n"contactLabel") as inkText;
                         if IsDefined(contactLabel) && Equals(contactLabel.GetText(), "Panam Palmer") {
-                            ConsoleLog("Found Panam's contact entry. Checking for hints_holder...");
 
                             // Locate the hints_holder within Panam's entry
                             let hintsHolderWidget = FindWidgetWithName(contactEntry, n"hints_holder") as inkHorizontalPanel;
                             if IsDefined(hintsHolderWidget) {
-                                ConsoleLog("hints_holder for Panam found!");
 
                                 if NotEquals(s"\(hintsHolderWidget.parentWidget.GetName())", "horiz_holder") {
                                     return;
@@ -52,7 +48,7 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                                         hintMod.SetAnchor(inkEAnchor.TopRight);
                                         hintMod.SetVAlign(inkEVerticalAlign.Center);
                                         hintMod.SetHAlign(inkEHorizontalAlign.Right);
-                                        ConsoleLog("Added hint_mod panel to hints_holder.");
+                                        ConsoleLog("Adding modded input hint to UI.");
 
                                         // Add icon and text to hint_mod
                                         let keyWidget = hintMod.AddChild(n"inkImage") as inkImage;
@@ -68,7 +64,6 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                                             keyWidget.SetHAlign(inkEHorizontalAlign.Center);
                                             keyWidget.BindProperty(n"tintColor", n"ContactListItem.fontColor");
                                             keyWidget.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
-                                            ConsoleLog("Added key image widget to hint_mod.");
                                         }
 
                                         let iconWidget = hintMod.AddChild(n"inkImage") as inkImage;
@@ -87,15 +82,10 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                                             iconWidget.BindProperty(n"tintColor", n"MainColors.Blue");
                                             iconWidget.BindProperty(n"opacity", n"MenuLabel.MainOpacity");
                                             iconWidget.SetVisible(true);
-                                            ConsoleLog("Added icon widget to hint_mod.");
                                         }
 
                                         hintsHolderWidget.ReorderChild(hintMod, 0);
-                                        ConsoleLog("Reordered hint_mod to the front of hints_holder.");
                                         
-                                        // Log the structure after modification
-                                        // ConsoleLog("Logging widget tree after adding hint_mod and its children...");
-                                        // LogChannelTree(n"DEBUG", hintsHolderWidget, true);
                                     } else {
                                         ConsoleLog("Failed to add hint_mod to hints_holder.");
                                     }
