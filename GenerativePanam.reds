@@ -9,9 +9,8 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
 
         // Check if the selected contact is Panam Palmer
         if Equals(contactName, "panam") {
-            ConsoleLog("Panam Palmer selected.");
             if modPhoneSystem != null {
-                modPhoneSystem.togglePanamSelected(true);
+                modPhoneSystem.TogglePanamSelected(true);
             }
             // Assuming m_contactList is the main container holding all contact entries
             let contactListWidget = inkWidgetRef.Get(this.m_contactsList) as inkCompoundWidget;
@@ -38,7 +37,7 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                                 // Check if hint_mod already exists
                                 let hintMod = FindWidgetWithName(hintsHolderWidget, n"hint_mod") as inkHorizontalPanel;
                                 if IsDefined(hintMod) {
-                                    ConsoleLog("hint_mod already exists, skipping creation.");
+
                                 } else {
                                     // Create hint_mod since it doesn't exist
                                     hintMod = hintsHolderWidget.AddChild(n"inkHorizontalPanel") as inkHorizontalPanel;
@@ -103,7 +102,7 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
             }
         } else {
             if modPhoneSystem != null {
-                modPhoneSystem.togglePanamSelected(false);
+                modPhoneSystem.TogglePanamSelected(false);
             }
         }
     }
