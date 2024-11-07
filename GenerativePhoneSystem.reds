@@ -9,6 +9,7 @@ public class GenerativePhoneSystem extends ScriptableService {
     private let contactListSlot: wref<inkCanvas>;
     private let chatContainer: wref<inkCanvas>;
     private let defaultPhoneController: wref<NewHudPhoneGameController>;
+    private let defaultChatUi: wref<inkCanvas>;
 
     private cb func OnReload() {
         LogChannel(n"DEBUG", "Reloading Generative Phone System...");
@@ -16,6 +17,10 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.InitializeSystem();
     }
     
+    public func GetInitialized() -> Bool {
+        return this.initialized;
+    }
+
     private func InitializeSystem() {
         LogChannel(n"DEBUG", "Initializing Generative Phone System...");
         this.panamSelected = false;
@@ -27,6 +32,8 @@ public class GenerativePhoneSystem extends ScriptableService {
         let virtualWindowRoot = virtualWindow.GetWidget(0) as inkCanvas;
         let hudMiddleWidget = virtualWindowRoot.GetWidget(53) as inkCanvas;
         this.parent = hudMiddleWidget.GetWidget(0) as inkCanvas;
+        this.contactListSlot = this.parent.GetWidget(9) as inkCanvas;
+        this.defaultChatUi = this.parent.GetWidget(11) as inkCanvas;
 
         this.InitializeDefaultPhoneController();
 
@@ -95,6 +102,8 @@ public class GenerativePhoneSystem extends ScriptableService {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.DisableContactsInput();
             this.contactListSlot.SetVisible(false);
+            this.parent.ReorderChild(this.chatContainer, 12);
+            this.parent.ReorderChild(this.defaultChatUi, 14);
             ConsoleLog("Disabling contacts input...");
         } else {
             LogChannel(n"DEBUG", "defaultPhoneController is not defined, initializing...");
@@ -108,6 +117,8 @@ public class GenerativePhoneSystem extends ScriptableService {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.EnableContactsInput();
             this.contactListSlot.SetVisible(true);
+            this.parent.ReorderChild(this.defaultChatUi, 12);
+            this.parent.ReorderChild(this.chatContainer, 14);
             ConsoleLog("Enabling contacts input...");
         } else {
             LogChannel(n"DEBUG", "defaultPhoneController is not defined, initializing...");
@@ -127,11 +138,11 @@ public class GenerativePhoneSystem extends ScriptableService {
         modMessengerSlot.SetMargin(new inkMargin(80.0, 480.0, 0.0, 0.0));
         modMessengerSlot.SetChildOrder(inkEChildOrder.Backward);
         modMessengerSlot.SetName(n"mod_messenger_slot");
+
         this.chatContainer = modMessengerSlot;
     }
 
     private func InitializeDefaultPhoneController() {
-        this.contactListSlot = this.parent.GetWidget(9) as inkCanvas;
         let inkSystem = GameInstance.GetInkSystem();
 
         for controller in inkSystem.GetLayer(n"inkHUDLayer").GetGameControllers() {
@@ -197,9 +208,10 @@ public class GenerativePhoneSystem extends ScriptableService {
 
         let messagesLine = new inkRectangle();
         messagesLine.SetName(n"line");
-        messagesLine.SetTintColor(new Color(Cast(94), Cast(246u), Cast(255u), Cast(255u)));
+        messagesLine.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
         messagesLine.SetMargin(new inkMargin(-20.0, 0.0, -20.0, 0.0));
         messagesLine.SetSize(new Vector2(0.0, 7.0));
+        messagesLine.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         messagesLine.BindProperty(n"tintColor", n"MainColors.Blue");
         messagesLine.Reparent(pathContainer);
 
@@ -209,11 +221,12 @@ public class GenerativePhoneSystem extends ScriptableService {
         messagesFluff.SetTexturePart(n"ico_envelelope");
         messagesFluff.SetTileHAlign(inkEHorizontalAlign.Left);
         messagesFluff.SetTileVAlign(inkEVerticalAlign.Top);
-        messagesFluff.SetTintColor(new Color(Cast(94), Cast(246u), Cast(255u), Cast(255u)));
+        messagesFluff.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
         messagesFluff.SetHAlign(inkEHorizontalAlign.Center);
         messagesFluff.SetVAlign(inkEVerticalAlign.Center);
         messagesFluff.SetSize(new Vector2(48.0, 48.0));
         messagesFluff.SetFitToContent(true);
+        messagesFluff.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         messagesFluff.BindProperty(n"tintColor", n"MainColors.Blue");
         messagesFluff.BindProperty(n"opacity", n"MenuLabel.MainOpacity");
         messagesFluff.Reparent(messagesPath);
@@ -228,13 +241,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         messagesPathText.SetVerticalAlignment(textVerticalAlignment.Center);
         messagesPathText.SetContentHAlign(inkEHorizontalAlign.Center);
         messagesPathText.SetContentVAlign(inkEVerticalAlign.Center);
-        messagesPathText.SetTintColor(new Color(Cast(94), Cast(246u), Cast(255u), Cast(255u)));
+        messagesPathText.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
         messagesPathText.SetHAlign(inkEHorizontalAlign.Left);
         messagesPathText.SetVAlign(inkEVerticalAlign.Center);
         messagesPathText.SetAnchor(inkEAnchor.Centered);
         messagesPathText.SetAnchorPoint(new Vector2(0.5, 0.5));
         messagesPathText.SetMargin(new inkMargin(10.0, 0.0, 0.0, 0.0));
         messagesPathText.SetFitToContent(true);
+        messagesPathText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         messagesPathText.BindProperty(n"tintColor", n"MainColors.Blue");
         messagesPathText.BindProperty(n"fontSize", n"MainColors.ReadableFontSize");
         messagesPathText.BindProperty(n"opacity", n"MenuLabel.MainOpacity");
@@ -246,24 +260,65 @@ public class GenerativePhoneSystem extends ScriptableService {
         arrowIcon.SetTexturePart(n"+1");
         arrowIcon.SetTileHAlign(inkEHorizontalAlign.Left);
         arrowIcon.SetTileVAlign(inkEVerticalAlign.Top);
-        arrowIcon.SetTintColor(new Color(Cast(94), Cast(246u), Cast(255u), Cast(255u)));
+        arrowIcon.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
         arrowIcon.SetHAlign(inkEHorizontalAlign.Center);
         arrowIcon.SetVAlign(inkEVerticalAlign.Center);
         arrowIcon.SetMargin(new inkMargin(0.0, -20.0, 0.0, 0.0));
         arrowIcon.SetSize(new Vector2(20.0, 20.0));
         arrowIcon.SetFitToContent(true);
         arrowIcon.SetRotation(90);
+        arrowIcon.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         arrowIcon.BindProperty(n"tintColor", n"MainColors.Blue");
         arrowIcon.Reparent(horizontalPanelWidget5);
 
+        let nameHolder = new inkFlex();
+        nameHolder.SetName(n"name_holder");
+        nameHolder.SetMargin(new inkMargin(20.0, 0.0, 0.0, 0.0));
+        nameHolder.SetSize(new Vector2(100.0, 100.0));
+        nameHolder.Reparent(horizontalPanelWidget5);
+
+        let nameLine = new inkRectangle();
+        nameLine.SetName(n"line");
+        nameLine.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        nameLine.SetVAlign(inkEVerticalAlign.Bottom);
+        nameLine.SetMargin(new inkMargin(-20.0, 0.0, -20.0, 0.0));
+        nameLine.SetSize(new Vector2(300.0, 7.0));
+        nameLine.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        nameLine.BindProperty(n"tintColor", n"MainColors.Blue");
+        nameLine.Reparent(nameHolder);
+
+        let nameText = new inkText();
+        nameText.SetName(n"contact_name");
+        nameText.SetText("Panam Palmer");
+        nameText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        nameText.SetFontStyle(n"Medium");
+        nameText.SetFontSize(50);
+        nameText.SetLetterCase(textLetterCase.UpperCase);
+        nameText.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        nameText.SetHorizontalAlignment(textHorizontalAlignment.Center);
+        nameText.SetVerticalAlignment(textVerticalAlignment.Center);
+        nameText.SetContentHAlign(inkEHorizontalAlign.Left);
+        nameText.SetOverflowPolicy(textOverflowPolicy.AutoScroll);
+        nameText.SetWrappingAtPosition(700);
+        nameText.SetHAlign(inkEHorizontalAlign.Left);
+        nameText.SetVAlign(inkEVerticalAlign.Center);
+        nameText.SetMargin(new inkMargin(0.0, -12.0, 0.0, 0.0));
+        nameText.SetSizeRule(inkESizeRule.Stretch);
+        nameText.SetSize(new Vector2(900.0, 63.0));
+        nameText.SetFitToContent(true);
+        nameText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        nameText.BindProperty(n"tintColor", n"MainColors.Blue");
+        nameText.Reparent(nameHolder);
+
         let rectangleRight = new inkRectangle();
         rectangleRight.SetName(n"right");
-        rectangleRight.SetTintColor(new Color(Cast(255), Cast(97u), Cast(89u), Cast(255u)));
+        rectangleRight.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
         rectangleRight.SetVAlign(inkEVerticalAlign.Center);
         rectangleRight.SetMargin(new inkMargin(30.0, 92.0, 270.0, 0.0));
         rectangleRight.SetSizeRule(inkESizeRule.Stretch);
         rectangleRight.SetSize(new Vector2(0.0, 2.0));
         rectangleRight.SetRenderTransformPivot(new Vector2(1, 0.5));
+        rectangleRight.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         rectangleRight.BindProperty(n"tintColor", n"MainColors.PanelRed");
         rectangleRight.Reparent(horizontalPanelWidget5);
 
@@ -274,13 +329,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         fluffNameL.SetFontStyle(n"Medium");
         fluffNameL.SetFontSize(20);
         fluffNameL.SetLetterCase(textLetterCase.UpperCase);
-        fluffNameL.SetTintColor(new Color(Cast(255), Cast(97u), Cast(89u), Cast(255u)));
+        fluffNameL.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
         fluffNameL.SetAnchor(inkEAnchor.TopRight);
         fluffNameL.SetHAlign(inkEHorizontalAlign.Left);
         fluffNameL.SetVAlign(inkEVerticalAlign.Top);
         fluffNameL.SetMargin(new inkMargin(0.0, -20.0, 0.0, 0.0));
         fluffNameL.SetSize(new Vector2(100.0, 32.0));
         fluffNameL.SetFitToContent(true);
+        fluffNameL.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         fluffNameL.BindProperty(n"fontStyle", n"MainColors.BodyFontWeight");
         fluffNameL.BindProperty(n"tintColor", n"MainColors.Red");
         fluffNameL.Reparent(topHolder);
@@ -292,7 +348,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         fluffNameR.SetFontStyle(n"Medium");
         fluffNameR.SetFontSize(20);
         fluffNameR.SetLetterCase(textLetterCase.UpperCase);
-        fluffNameR.SetTintColor(new Color(Cast(255), Cast(97u), Cast(89u), Cast(255u)));
+        fluffNameR.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
         fluffNameR.SetAnchor(inkEAnchor.TopRight);
         fluffNameR.SetHAlign(inkEHorizontalAlign.Right);
         fluffNameR.SetVAlign(inkEVerticalAlign.Bottom);
@@ -300,6 +356,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         fluffNameR.SetRenderTransformPivot(new Vector2(1, 0.5));
         fluffNameR.SetSize(new Vector2(100.0, 32.0));
         fluffNameR.SetFitToContent(true);
+        fluffNameR.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         fluffNameR.BindProperty(n"fontStyle", n"MainColors.BodyFontWeight");
         fluffNameR.BindProperty(n"tintColor", n"MainColors.Red");
         fluffNameR.Reparent(topHolder);
@@ -310,5 +367,623 @@ public class GenerativePhoneSystem extends ScriptableService {
         rootWrapper.SetMargin(new inkMargin(100.0, 50.0, 0.0, 0.0));
         rootWrapper.SetFitToContent(true);
         rootWrapper.Reparent(modMessengerSlotRoot);
+
+        let wrapperContent = new inkFlex();
+        wrapperContent.SetName(n"content");
+        wrapperContent.SetAnchor(inkEAnchor.BottomLeft);
+        wrapperContent.SetHAlign(inkEHorizontalAlign.Left);
+        wrapperContent.SetVAlign(inkEVerticalAlign.Top);
+        wrapperContent.SetMargin(new inkMargin(120.0, 0.0, 0.0, 0.0));
+        wrapperContent.SetSizeRule(inkESizeRule.Stretch);
+        wrapperContent.SetSize(new Vector2(100.0, 100.0));
+        wrapperContent.SetAffectsLayoutWhenHidden(true);
+        wrapperContent.Reparent(rootWrapper);
+
+        let innerWrapper = new inkVerticalPanel();
+        innerWrapper.SetName(n"wrapper");
+        innerWrapper.SetMargin(new inkMargin(0.0, 0.0, 24.0, 0.0));
+        innerWrapper.SetFitToContent(false);
+        innerWrapper.Reparent(wrapperContent);
+
+        let conversation = new inkCanvas();
+        conversation.SetName(n"Conversation");
+        conversation.SetSizeRule(inkESizeRule.Stretch);
+        conversation.SetSize(new Vector2(1300.0, 1400.0));
+        conversation.SetAffectsLayoutWhenHidden(true);
+        conversation.SetChildOrder(inkEChildOrder.Backward);
+        conversation.Reparent(innerWrapper);
+
+        let messageScrollArea = new inkScrollArea();
+        messageScrollArea.SetName(n"MessagesScrollArea");
+        messageScrollArea.SetMargin(new inkMargin(20.0, 0.0, 35.0, 0.0));
+        messageScrollArea.SetAnchor(inkEAnchor.Fill);
+        messageScrollArea.useInternalMask = false;
+        messageScrollArea.SetSize(new Vector2(600.0, 600.0));
+        messageScrollArea.Reparent(conversation);
+
+        let scrollAreaWrapper = new inkFlex();
+        scrollAreaWrapper.SetName(n"wrapper");
+        scrollAreaWrapper.SetSize(new Vector2(100.0, 100.0));
+        scrollAreaWrapper.Reparent(messageScrollArea);
+
+        let scrollAreaContainer = new inkVerticalPanel();
+        scrollAreaContainer.SetName(n"container");
+        scrollAreaContainer.SetHAlign(inkEHorizontalAlign.Left);
+        scrollAreaContainer.SetVAlign(inkEVerticalAlign.Top);
+        scrollAreaContainer.SetFitToContent(true);
+        scrollAreaContainer.Reparent(scrollAreaWrapper);
+
+        let messagesList = new inkVerticalPanel();
+        messagesList.SetName(n"MessagesList");
+        messagesList.SetHAlign(inkEHorizontalAlign.Left);
+        messagesList.SetVAlign(inkEVerticalAlign.Top);
+        messagesList.SetFitToContent(true);
+        messagesList.SetMargin(new inkMargin(0.0, 40.0, 0.0, 40.0));
+        messagesList.SetChildMargin(new inkMargin(0.0, 5.0, 0.0, 0.0));
+        messagesList.Reparent(scrollAreaContainer);
+
+        // Player message starts here
+        let playerMessage = new inkFlex();
+        playerMessage.SetName(n"Root");
+        playerMessage.SetHAlign(inkEHorizontalAlign.Left);
+        playerMessage.SetSize(new Vector2(100.0, 100.0));
+        playerMessage.SetStyle(r"base\\gameplay\\gui\\fullscreen\\phone_quest_menu\\messenger.inkstyle");
+        playerMessage.SetState(n"Player");
+        playerMessage.Reparent(messagesList);
+
+        let playerWide = new inkCanvas();
+        playerWide.SetName(n"wide");
+        playerWide.SetHAlign(inkEHorizontalAlign.Left);
+        playerWide.SetSize(new Vector2(1200.0, 600.0));
+        playerWide.Reparent(playerMessage);
+
+        let playerMessageContainer = new inkFlex();
+        playerMessageContainer.SetName(n"container");
+        playerMessageContainer.SetHAlign(inkEHorizontalAlign.Right);
+        playerMessageContainer.SetVAlign(inkEVerticalAlign.Top);
+        playerMessageContainer.SetSize(new Vector2(100.0, 100.0));
+        playerMessageContainer.Reparent(playerMessage);
+
+        let playerMessageBackground = new inkImage();
+        playerMessageBackground.SetName(n"background");
+        playerMessageBackground.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        playerMessageBackground.SetTexturePart(n"msgBuble_reply_bg");
+        playerMessageBackground.SetNineSliceScale(true);
+        playerMessageBackground.SetTileHAlign(inkEHorizontalAlign.Left);
+        playerMessageBackground.SetTileVAlign(inkEVerticalAlign.Top);
+        playerMessageBackground.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(198u), Cast(255u)));
+        playerMessageBackground.SetOpacity(0.05);
+        playerMessageBackground.SetSize(new Vector2(32.0, 32.0));
+        playerMessageBackground.SetFitToContent(true);
+        playerMessageBackground.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        playerMessageBackground.BindProperty(n"tintColor", n"Message.BackgroundColor");
+        playerMessageBackground.BindProperty(n"opacity", n"Message.BackgroundOpacity");
+        playerMessageBackground.Reparent(playerMessageContainer);
+
+        let playerMessageBorder = new inkImage();
+        playerMessageBorder.SetName(n"border");
+        playerMessageBorder.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        playerMessageBorder.SetTexturePart(n"msgBuble_reply_fg");
+        playerMessageBorder.SetNineSliceScale(true);
+        playerMessageBorder.SetTileHAlign(inkEHorizontalAlign.Left);
+        playerMessageBorder.SetTileVAlign(inkEVerticalAlign.Top);
+        playerMessageBorder.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(198u), Cast(255u)));
+        playerMessageBorder.SetOpacity(0.5);
+        playerMessageBorder.SetSize(new Vector2(32.0, 32.0));
+        playerMessageBorder.SetFitToContent(true);
+        playerMessageBorder.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        playerMessageBorder.BindProperty(n"tintColor", n"Message.BorderColor");
+        playerMessageBorder.Reparent(playerMessageContainer);
+
+        let playerMessageContent = new inkVerticalPanel();
+        playerMessageContent.SetName(n"container");
+        playerMessageContent.SetHAlign(inkEHorizontalAlign.Left);
+        playerMessageContent.SetVAlign(inkEVerticalAlign.Top);
+        playerMessageContent.SetMargin(new inkMargin(24.0, 20.0, 20.0, 30.0));
+        playerMessageContent.SetFitToContent(true);
+        playerMessageContent.Reparent(playerMessageContainer);
+
+        let playerMessageText = new inkText();
+        playerMessageText.SetName(n"Message");
+        playerMessageText.SetText("This is a static test message. I am a god at building UIs.");
+        playerMessageText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        playerMessageText.SetFontStyle(n"Medium");
+        playerMessageText.SetFontSize(42);
+        playerMessageText.SetLetterCase(textLetterCase.OriginalCase);
+        playerMessageText.SetContentVAlign(inkEVerticalAlign.Top);
+        playerMessageText.SetWrapping(true);
+        playerMessageText.SetWrappingAtPosition(1000);
+        playerMessageText.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(188u), Cast(255u)));
+        playerMessageText.SetHAlign(inkEHorizontalAlign.Left);
+        playerMessageText.SetVAlign(inkEVerticalAlign.Top);
+        playerMessageText.SetMargin(new inkMargin(0.0, 0.0, 10.0, 0.0));
+        playerMessageText.SetSize(new Vector2(0.0, 32.0));
+        playerMessageText.SetFitToContent(true);
+        playerMessageText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        playerMessageText.BindProperty(n"tintColor", n"Message.TextColor");
+        playerMessageText.BindProperty(n"fontSize", n"MainColors.ReadableMedium");
+        playerMessageText.Reparent(playerMessageContent);
+
+        // NPC Message starts here
+        let npcMessage = new inkFlex();
+        npcMessage.SetName(n"Root");
+        npcMessage.SetHAlign(inkEHorizontalAlign.Left);
+        npcMessage.SetSize(new Vector2(100.0, 100.0));
+        npcMessage.SetStyle(r"base\\gameplay\\gui\\fullscreen\\phone_quest_menu\\messenger.inkstyle");
+        npcMessage.Reparent(messagesList);
+
+        let npcWide = new inkCanvas();
+        npcWide.SetName(n"wide");
+        npcWide.SetHAlign(inkEHorizontalAlign.Left);
+        npcWide.SetSize(new Vector2(1200.0, 600.0));
+        npcWide.SetChildOrder(inkEChildOrder.Backward);
+        npcWide.Reparent(npcMessage);
+
+        let npcMessageContainer = new inkFlex();
+        npcMessageContainer.SetName(n"container");
+        npcMessageContainer.SetHAlign(inkEHorizontalAlign.Left);
+        npcMessageContainer.SetVAlign(inkEVerticalAlign.Top);
+        npcMessageContainer.SetSize(new Vector2(100.0, 100.0));
+        npcMessageContainer.Reparent(npcMessage);
+
+        let npcMessageBackground = new inkImage();
+        npcMessageBackground.SetName(n"background");
+        npcMessageBackground.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        npcMessageBackground.SetTexturePart(n"msgBuble_bg");
+        npcMessageBackground.SetNineSliceScale(true);
+        npcMessageBackground.SetTileHAlign(inkEHorizontalAlign.Left);
+        npcMessageBackground.SetTileVAlign(inkEVerticalAlign.Top);
+        npcMessageBackground.SetTintColor(new Color(Cast(23u), Cast(44u), Cast(46u), Cast(255u)));
+        npcMessageBackground.SetOpacity(0.35);
+        npcMessageBackground.SetSize(new Vector2(32.0, 32.0));
+        npcMessageBackground.SetFitToContent(true);
+        npcMessageBackground.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        npcMessageBackground.BindProperty(n"tintColor", n"Message.BackgroundColor");
+        npcMessageBackground.BindProperty(n"opacity", n"Message.BackgroundOpacity");
+        npcMessageBackground.Reparent(npcMessageContainer);
+
+        let npcMessageBorder = new inkImage();
+        npcMessageBorder.SetName(n"border");
+        npcMessageBorder.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        npcMessageBorder.SetTexturePart(n"msgBuble_fg");
+        npcMessageBorder.SetNineSliceScale(true);
+        npcMessageBorder.SetTileHAlign(inkEHorizontalAlign.Left);
+        npcMessageBorder.SetTileVAlign(inkEVerticalAlign.Top);
+        npcMessageBorder.SetTintColor(new Color(Cast(52u), Cast(145u), Cast(151u), Cast(255u)));
+        npcMessageBorder.SetOpacity(0.5);
+        npcMessageBorder.SetSize(new Vector2(32.0, 32.0));
+        npcMessageBorder.SetFitToContent(true);
+        npcMessageBorder.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        npcMessageBorder.BindProperty(n"tintColor", n"Message.BorderColor");
+        npcMessageBorder.Reparent(npcMessageContainer);
+
+        let npcMessageContent = new inkVerticalPanel();
+        npcMessageContent.SetName(n"container");
+        npcMessageContent.SetHAlign(inkEHorizontalAlign.Left);
+        npcMessageContent.SetVAlign(inkEVerticalAlign.Top);
+        npcMessageContent.SetMargin(new inkMargin(24.0, 20.0, 20.0, 30.0));
+        npcMessageContent.SetFitToContent(true);
+        npcMessageContent.Reparent(npcMessageContainer);
+
+        let npcMessageText = new inkText();
+        npcMessageText.SetName(n"Message");
+        npcMessageText.SetText("Can't believe you spent that much time on this.");
+        npcMessageText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        npcMessageText.SetFontStyle(n"Medium");
+        npcMessageText.SetFontSize(42);
+        npcMessageText.SetLetterCase(textLetterCase.OriginalCase);
+        npcMessageText.SetContentVAlign(inkEVerticalAlign.Top);
+        npcMessageText.SetWrapping(true);
+        npcMessageText.SetWrappingAtPosition(1000);
+        npcMessageText.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        npcMessageText.SetHAlign(inkEHorizontalAlign.Left);
+        npcMessageText.SetVAlign(inkEVerticalAlign.Top);
+        npcMessageText.SetMargin(new inkMargin(0.0, 0.0, 10.0, 0.0));
+        npcMessageText.SetSize(new Vector2(0.0, 32.0));
+        npcMessageText.SetFitToContent(true);
+        npcMessageText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        npcMessageText.BindProperty(n"tintColor", n"Message.TextColor");
+        npcMessageText.BindProperty(n"fontSize", n"MainColors.ReadableMedium");
+        npcMessageText.Reparent(npcMessageContent);
+
+        let typingIndicator = new inkFlex();
+        typingIndicator.SetName(n"typing_indicator");
+        typingIndicator.SetVAlign(inkEVerticalAlign.Bottom);
+        typingIndicator.SetSize(new Vector2(100.0, 100.0));
+        typingIndicator.Reparent(scrollAreaContainer);
+
+        let indicatorContainer = new inkFlex();
+        indicatorContainer.SetName(n"container");
+        indicatorContainer.SetVAlign(inkEVerticalAlign.Top);
+        indicatorContainer.SetMargin(new inkMargin(0.0, 0.0, 0.0, 25.0));
+        indicatorContainer.SetSize(new Vector2(100.0, 100.0));
+
+        let indicatorContainer2 = new inkVerticalPanel();
+        indicatorContainer2.SetName(n"container");
+        indicatorContainer2.SetHAlign(inkEHorizontalAlign.Left);
+        indicatorContainer2.SetVAlign(inkEVerticalAlign.Top);
+        indicatorContainer2.SetFitToContent(true);
+        indicatorContainer2.SetStyle(r"base\\gameplay\\gui\\fullscreen\\phone_quest_menu\\messenger.inkstyle");
+
+        let horizontalPanelWidget16 = new inkHorizontalPanel();
+        horizontalPanelWidget16.SetName(n"inkHorizontalPanelWidget16");
+        horizontalPanelWidget16.SetHAlign(inkEHorizontalAlign.Left);
+        horizontalPanelWidget16.SetFitToContent(true);
+        horizontalPanelWidget16.SetChildMargin(new inkMargin(0.0, 0.0, 4.0, 0.0));
+        horizontalPanelWidget16.Reparent(indicatorContainer2);
+
+        let isTyping = new inkText();
+        isTyping.SetName(n"isTyping");
+        isTyping.SetText("Panam Palmer is typing");
+        isTyping.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        isTyping.SetFontStyle(n"Medium");
+        isTyping.SetFontSize(38);
+        isTyping.SetLetterCase(textLetterCase.OriginalCase);
+        isTyping.SetContentVAlign(inkEVerticalAlign.Top);
+        isTyping.SetWrappingAtPosition(800);
+        isTyping.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        isTyping.SetHAlign(inkEHorizontalAlign.Left);
+        isTyping.SetVAlign(inkEVerticalAlign.Top);
+        isTyping.SetSize(new Vector2(0.0, 32.0));
+        isTyping.SetFitToContent(true);
+        isTyping.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        isTyping.BindProperty(n"tintColor", n"Message.TextColor");
+        isTyping.BindProperty(n"fontSize", n"MainColors.ReadableSmall");
+        isTyping.BindProperty(n"fontStyle", n"MainColors.BodyFontWeight");
+        isTyping.Reparent(horizontalPanelWidget16);
+
+        let dot1 = new inkText();
+        dot1.SetName(n"isTyping");
+        dot1.SetText(".");
+        dot1.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        dot1.SetFontStyle(n"Semi-Bold");
+        dot1.SetFontSize(38);
+        dot1.SetLetterCase(textLetterCase.OriginalCase);
+        dot1.SetContentVAlign(inkEVerticalAlign.Top);
+        dot1.SetWrappingAtPosition(800);
+        dot1.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        dot1.SetHAlign(inkEHorizontalAlign.Left);
+        dot1.SetVAlign(inkEVerticalAlign.Top);
+        dot1.SetSize(new Vector2(0.0, 32.0));
+        dot1.SetFitToContent(true);
+        dot1.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        dot1.BindProperty(n"tintColor", n"Message.TextColor");
+        dot1.BindProperty(n"fontSize", n"MainColors.ReadableSmall");
+        dot1.BindProperty(n"fontStyle", n"MainColors.HeaderFontWeight");
+        dot1.Reparent(horizontalPanelWidget16);
+
+        let dot2 = new inkText();
+        dot2.SetName(n"isTyping");
+        dot2.SetText(".");
+        dot2.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        dot2.SetFontStyle(n"Semi-Bold");
+        dot2.SetFontSize(38);
+        dot2.SetLetterCase(textLetterCase.OriginalCase);
+        dot2.SetContentVAlign(inkEVerticalAlign.Top);
+        dot2.SetWrappingAtPosition(800);
+        dot2.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        dot2.SetHAlign(inkEHorizontalAlign.Left);
+        dot2.SetVAlign(inkEVerticalAlign.Top);
+        dot2.SetSize(new Vector2(0.0, 32.0));
+        dot2.SetFitToContent(true);
+        dot2.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        dot2.BindProperty(n"tintColor", n"Message.TextColor");
+        dot2.BindProperty(n"fontSize", n"MainColors.ReadableSmall");
+        dot2.BindProperty(n"fontStyle", n"MainColors.HeaderFontWeight");
+        dot2.Reparent(horizontalPanelWidget16);
+
+        let dot3 = new inkText();
+        dot3.SetName(n"isTyping");
+        dot3.SetText(".");
+        dot3.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        dot3.SetFontStyle(n"Semi-Bold");
+        dot3.SetFontSize(38);
+        dot3.SetLetterCase(textLetterCase.OriginalCase);
+        dot3.SetContentVAlign(inkEVerticalAlign.Top);
+        dot3.SetWrappingAtPosition(800);
+        dot3.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        dot3.SetHAlign(inkEHorizontalAlign.Left);
+        dot3.SetVAlign(inkEVerticalAlign.Top);
+        dot3.SetSize(new Vector2(0.0, 32.0));
+        dot3.SetFitToContent(true);
+        dot3.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        dot3.BindProperty(n"tintColor", n"Message.TextColor");
+        dot3.BindProperty(n"fontSize", n"MainColors.ReadableSmall");
+        dot3.BindProperty(n"fontStyle", n"MainColors.HeaderFontWeight");
+        dot3.Reparent(horizontalPanelWidget16);
+
+        let conversationMask = new inkMask();
+        conversationMask.SetName(n"mask");
+        conversationMask.SetDataSource(inkMaskDataSource.TextureAtlas);
+        conversationMask.SetTextureAtlas(r"base\\gameplay\\gui\\common\\masks.inkatlas");
+        conversationMask.SetTexturePart(n"gradMask_journal_description");
+        conversationMask.SetDynamicTexture(n"entry_mask");
+        conversationMask.SetOpacity(0.01);
+        conversationMask.SetSize(new Vector2(1920.0, 1500.0));
+        conversationMask.Reparent(conversation);
+
+        let slider = new inkVerticalPanel();
+        slider.SetName(n"Slider");
+        slider.SetAnchor(inkEAnchor.RightFillVerticaly);
+        slider.SetMargin(new inkMargin(0.0, 0.0, -5.0, 0.0));
+        slider.SetSize(new Vector2(8.0, 1125.0));
+        slider.Reparent(conversation);
+
+        let slidingArea = new inkCanvas();
+        slidingArea.SetName(n"slidingArea");
+        slidingArea.SetSize(new Vector2(8.0, 1125.0));
+        slidingArea.SetChildOrder(inkEChildOrder.Backward);
+        slidingArea.Reparent(slider);
+
+        let handle = new inkRectangle();
+        handle.SetName(n"Handle");
+        handle.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        handle.SetOpacity(0.3);
+        handle.SetAnchor(inkEAnchor.TopFillHorizontaly);
+        handle.SetMargin(new inkMargin(0.0, 788.07, 0.0, 0.0));
+        handle.SetSize(new Vector2(64.0, 20.0));
+        handle.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        handle.BindProperty(n"tintColor", n"MainColors.Red");
+        handle.Reparent(slidingArea);
+
+        let sliderBackground = new inkRectangle();
+        sliderBackground.SetName(n"Background");
+        sliderBackground.SetTintColor(new Color(Cast(14u), Cast(14u), Cast(23u), Cast(255u)));
+        sliderBackground.SetOpacity(0.8);
+        sliderBackground.SetSize(new Vector2(64.0, 64.0));
+        sliderBackground.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        sliderBackground.BindProperty(n"tintColor", n"MainColors.Fullscreen_PrimaryBackgroundDarkest");
+        sliderBackground.Reparent(slidingArea);
+
+        let contentFill = new inkImage();
+        contentFill.SetName(n"contentFill");
+        contentFill.SetAtlasResource(r"base\\gameplay\\gui\\common\\shapes\\atlas_shapes_sync.inkatlas");
+        contentFill.SetTexturePart(n"item_bg");
+        contentFill.SetNineSliceScale(true);
+        contentFill.SetTileHAlign(inkEHorizontalAlign.Left);
+        contentFill.SetTileVAlign(inkEVerticalAlign.Top);
+        contentFill.SetTintColor(new Color(Cast(20u), Cast(20u), Cast(20u), Cast(255u)));
+        contentFill.SetOpacity(0.2);
+        contentFill.SetSize(new Vector2(500.0, 500.0));
+        contentFill.SetFitToContent(true);
+        contentFill.SetAffectsLayoutWhenHidden(true);
+        contentFill.Reparent(conversation);
+
+        let contentBorder = new inkImage();
+        contentBorder.SetName(n"contentBorder");
+        contentBorder.SetAtlasResource(r"base\\gameplay\\gui\\common\\shapes\\atlas_shapes_sync.inkatlas");
+        contentBorder.SetTexturePart(n"item_fg");
+        contentBorder.SetNineSliceScale(true);
+        contentBorder.SetTileHAlign(inkEHorizontalAlign.Left);
+        contentBorder.SetTileVAlign(inkEVerticalAlign.Top);
+        contentBorder.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        contentBorder.SetOpacity(0.007);
+        contentBorder.SetSize(new Vector2(500.0, 500.0));
+        contentBorder.SetFitToContent(true);
+        contentBorder.SetAffectsLayoutWhenHidden(true);
+        contentBorder.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        contentBorder.BindProperty(n"tintColor", n"MainColors.Red");
+        contentBorder.Reparent(conversation);
+
+        let replyOptions = new inkVerticalPanel();
+        replyOptions.SetName(n"ReplyOptions");
+        replyOptions.SetAnchor(inkEAnchor.BottomLeft);
+        replyOptions.SetMargin(new inkMargin(0.0, 10.0, 0.0, 10.0));
+        replyOptions.SetSizeCoefficient(0.5);
+        replyOptions.SetFitToContent(true);
+        replyOptions.Reparent(innerWrapper);
+
+        let choicesList = new inkVerticalPanel();
+        choicesList.SetName(n"ChoicesList");
+        choicesList.SetHAlign(inkEHorizontalAlign.Right);
+        choicesList.SetVAlign(inkEVerticalAlign.Top);
+        choicesList.SetFitToContent(true);
+        choicesList.SetChildMargin(new inkMargin(0.0, 10.0, 0.0, 0.0));
+        choicesList.Reparent(replyOptions);
+
+        let choice1 = new inkHorizontalPanel();
+        choice1.SetName(n"item");
+        choice1.SetFitToContent(true);
+        choice1.SetStyle(r"base\\gameplay\\gui\\fullscreen\\phone_quest_menu\\messenger.inkstyle");
+        choice1.SetState(n"QuestSelected");
+        choice1.SetChildMargin(new inkMargin(0.0, 0.0, 0.0, 7.0));
+        choice1.Reparent(choicesList);
+
+        let flexWidget20 = new inkFlex();
+        flexWidget20.SetName(n"inkFlexWidget20");
+        flexWidget20.SetHAlign(inkEHorizontalAlign.Right);
+        flexWidget20.SetVAlign(inkEVerticalAlign.Top);
+        flexWidget20.SetMargin(new inkMargin(10.0, 0.0, 0.0, 0.0));
+        flexWidget20.SetSizeRule(inkESizeRule.Stretch);
+        flexWidget20.SetFitToContent(true);
+        flexWidget20.Reparent(choice1);
+
+        let textFlex = new inkFlex();
+        textFlex.SetName(n"textFlex");
+        textFlex.SetHAlign(inkEHorizontalAlign.Right);
+        textFlex.SetVAlign(inkEVerticalAlign.Top);
+        textFlex.SetSize(new Vector2(100.0, 100.0));
+        textFlex.Reparent(flexWidget20);
+
+        let textBackground = new inkImage();
+        textBackground.SetName(n"background");
+        textBackground.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        textBackground.SetTexturePart(n"msgBuble_reply_bg");
+        textBackground.SetNineSliceScale(true);
+        textBackground.SetTileHAlign(inkEHorizontalAlign.Left);
+        textBackground.SetTileVAlign(inkEVerticalAlign.Top);
+        textBackground.SetTintColor(new Color(Cast(161u), Cast(126u), Cast(51u), Cast(255u)));
+        textBackground.SetOpacity(0.15);
+        textBackground.SetSize(new Vector2(32.0, 32.0));
+        textBackground.SetFitToContent(true);
+        textBackground.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        textBackground.BindProperty(n"tintColor", n"MessageReply.BackgroundColor");
+        textBackground.BindProperty(n"opacity", n"MessageReply.BackgroundOpacity");
+        textBackground.Reparent(textFlex);
+
+        let activeTextWrapper = new inkHorizontalPanel();
+        activeTextWrapper.SetName(n"active_text_wrapper");
+        activeTextWrapper.SetHAlign(inkEHorizontalAlign.Right);
+        activeTextWrapper.SetVAlign(inkEVerticalAlign.Center);
+        activeTextWrapper.SetFitToContent(true);
+        activeTextWrapper.Reparent(textFlex);
+
+        let captionImage = new inkHorizontalPanel();
+        captionImage.SetName(n"captionImageHorz_primary");
+        captionImage.SetHAlign(inkEHorizontalAlign.Right);
+        captionImage.SetVAlign(inkEVerticalAlign.Center);
+        captionImage.SetMargin(new inkMargin(20.0, 0.0, 0.0, 0.0));
+        captionImage.SetFitToContent(true);
+        captionImage.SetChildMargin(new inkMargin(0.0, 0.0, 5.0, 0.0));
+        captionImage.Reparent(activeTextWrapper);
+
+        let activeItemText = new inkText();
+        activeItemText.SetName(n"activeItemText");
+        activeItemText.SetText("Send a message.");
+        activeItemText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        activeItemText.SetFontStyle(n"Medium");
+        activeItemText.SetFontSize(42);
+        activeItemText.SetLetterCase(textLetterCase.OriginalCase);
+        activeItemText.SetOverflowPolicy(textOverflowPolicy.DotsEnd);
+        activeItemText.SetWrappingAtPosition(1000);
+        activeItemText.SetTintColor(new Color(Cast(255u), Cast(255u), Cast(78u), Cast(255u)));
+        activeItemText.SetHAlign(inkEHorizontalAlign.Left);
+        activeItemText.SetVAlign(inkEVerticalAlign.Center);
+        activeItemText.SetMargin(new inkMargin(17.0, 17.0, 30.0, 30.0));
+        activeItemText.SetSize(new Vector2(750.0, 63.0));
+        activeItemText.SetFitToContent(true);
+        activeItemText.SetTranslation(new Vector2(0.50, 0.50));
+        activeItemText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        activeItemText.BindProperty(n"fontSize", n"MainColors.ReadableMedium");
+        activeItemText.BindProperty(n"fontStyle", n"MainColors.BodyFontWeight");
+        activeItemText.BindProperty(n"tintColor", n"MessageReply.TextColor");
+        activeItemText.BindProperty(n"opacity", n"MessageReply.TextOpacity");
+        activeItemText.Reparent(activeTextWrapper);
+
+        let textBorder = new inkImage();
+        textBorder.SetName(n"border");
+        textBorder.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\phone\\new_phone_assets.inkatlas");
+        textBorder.SetTexturePart(n"msgBuble_reply_fg");
+        textBorder.SetNineSliceScale(true);
+        textBorder.SetTileHAlign(inkEHorizontalAlign.Left);
+        textBorder.SetTileVAlign(inkEVerticalAlign.Top);
+        textBorder.SetTintColor(new Color(Cast(161u), Cast(126u), Cast(51u), Cast(255u)));
+        textBorder.SetSize(new Vector2(32.0, 32.0));
+        textBorder.SetFitToContent(true);
+        textBorder.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        textBorder.BindProperty(n"tintColor", n"MessageReply.BorderColor");
+        textBorder.BindProperty(n"opacity", n"MessageReply.BorderOpacity");
+        textBorder.Reparent(textFlex);
+
+        let sqQuestCanvas = new inkCanvas();
+        sqQuestCanvas.SetName(n"SQ_quest_canvas");
+        sqQuestCanvas.SetVAlign(inkEVerticalAlign.Bottom);
+        sqQuestCanvas.SetMargin(new inkMargin(10.0, 0.0, 0.0, 0.0));
+        sqQuestCanvas.SetSize(new Vector2(43.0, 43.0));
+        sqQuestCanvas.SetAffectsLayoutWhenHidden(true);
+        sqQuestCanvas.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        sqQuestCanvas.BindProperty(n"opacity", n"MessageReply.SelectionBulletOpacity");
+        sqQuestCanvas.SetChildOrder(inkEChildOrder.Backward);
+        sqQuestCanvas.Reparent(choice1);
+
+        let hintReply = new inkHorizontalPanel();
+        hintReply.SetName(n"hint_reply");
+        hintReply.SetAnchor(inkEAnchor.CenterRight);
+        hintReply.SetAnchorPoint(new Vector2(1, 1));
+        hintReply.SetHAlign(inkEHorizontalAlign.Left);
+        hintReply.SetVAlign(inkEVerticalAlign.Top);
+        hintReply.SetMargin(new inkMargin(0.0, 0.0, -36.0, 0.0));
+        hintReply.SetFitToContent(true);
+        hintReply.SetChildMargin(new inkMargin(0.0, 0.0, 10.0, 0.0));
+        hintReply.Reparent(sqQuestCanvas);
+
+        let hintReplyIcon = new inkImage();
+        hintReplyIcon.SetName(n"inputIcon");
+        hintReplyIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\input\\icons_keyboard.inkatlas");
+        hintReplyIcon.SetTexturePart(n"mouse_left");
+        hintReplyIcon.SetTileHAlign(inkEHorizontalAlign.Left);
+        hintReplyIcon.SetTileVAlign(inkEVerticalAlign.Top);
+        hintReplyIcon.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        hintReplyIcon.SetAnchor(inkEAnchor.Centered);
+        hintReplyIcon.SetHAlign(inkEHorizontalAlign.Center);
+        hintReplyIcon.SetVAlign(inkEVerticalAlign.Center);
+        hintReplyIcon.SetSize(new Vector2(64.0, 64.0));
+        hintReplyIcon.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintReplyIcon.BindProperty(n"tintColor", n"MainColors.Blue");
+        hintReplyIcon.Reparent(hintReply);
+
+        let contentSizeProvider = new inkCanvas();
+        contentSizeProvider.SetName(n"sizeProvider");
+        contentSizeProvider.SetHAlign(inkEHorizontalAlign.Left);
+        contentSizeProvider.SetVAlign(inkEVerticalAlign.Top);
+        contentSizeProvider.SetMargin(new inkMargin(24.0, 0.0, 24.0, 0.0));
+        contentSizeProvider.SetSize(new Vector2(1250.0, 1250.0));
+        contentSizeProvider.SetChildOrder(inkEChildOrder.Backward);
+        contentSizeProvider.Reparent(wrapperContent);
+
+        let hrUnderContent = new inkRectangle();
+        hrUnderContent.SetName(n"hrUnderContent");
+        hrUnderContent.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        hrUnderContent.SetAnchor(inkEAnchor.BottomFillHorizontaly);
+        hrUnderContent.SetVAlign(inkEVerticalAlign.Bottom);
+        hrUnderContent.SetOpacity(0.2);
+        hrUnderContent.SetMargin(new inkMargin(120.0, 10.0, 20.0, 0.0));
+        hrUnderContent.SetSize(new Vector2(0.0, 2.0));
+        hrUnderContent.SetRenderTransformPivot(new Vector2(0, 0.5));
+        hrUnderContent.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hrUnderContent.BindProperty(n"tintColor", n"MainColors.Red");
+        hrUnderContent.Reparent(rootWrapper);
+
+        let wrapperInputHints = new inkHorizontalPanel();
+        wrapperInputHints.SetName(n"inputHints");
+        wrapperInputHints.SetHAlign(inkEHorizontalAlign.Right);
+        wrapperInputHints.SetVAlign(inkEVerticalAlign.Top);
+        wrapperInputHints.SetFitToContent(true);
+        wrapperInputHints.SetTranslation(new Vector2(0.0, 25.0));
+        wrapperInputHints.SetChildMargin(new inkMargin(30.0, 0.0, 0.0, 0.0));
+        wrapperInputHints.Reparent(rootWrapper);
+
+        let hintClose = new inkHorizontalPanel();
+        hintClose.SetName(n"hint_close");
+        hintClose.SetAnchor(inkEAnchor.TopRight);
+        hintClose.SetAnchorPoint(new Vector2(1, 0));
+        hintClose.SetHAlign(inkEHorizontalAlign.Left);
+        hintClose.SetVAlign(inkEVerticalAlign.Top);
+        hintClose.SetFitToContent(true);
+        hintClose.Reparent(wrapperInputHints);
+
+        let hintCloseIcon = new inkImage();
+        hintCloseIcon.SetName(n"inputIcon");
+        hintCloseIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\input\\icons_keyboard.inkatlas");
+        hintCloseIcon.SetTexturePart(n"kb_c");
+        hintCloseIcon.SetSize(new Vector2(64.0, 64.0));
+        hintCloseIcon.SetTileHAlign(inkEHorizontalAlign.Left);
+        hintCloseIcon.SetTileVAlign(inkEVerticalAlign.Top);
+        hintCloseIcon.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        hintCloseIcon.SetAnchor(inkEAnchor.Centered);
+        hintCloseIcon.SetHAlign(inkEHorizontalAlign.Center);
+        hintCloseIcon.SetVAlign(inkEVerticalAlign.Center);
+        hintCloseIcon.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintCloseIcon.BindProperty(n"tintColor", n"MainColors.Blue");
+        hintCloseIcon.Reparent(hintClose);
+
+        let hintCloseText = new inkText();
+        hintCloseText.SetName(n"action");
+        hintCloseText.SetText("Close");
+        hintCloseText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        hintCloseText.SetFontStyle(n"Semi-Bold");
+        hintCloseText.SetFontSize(38);
+        hintCloseText.SetLetterCase(textLetterCase.UpperCase);
+        hintCloseText.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        hintCloseText.SetAnchor(inkEAnchor.TopRight);
+        hintCloseText.SetAnchorPoint(new Vector2(1, 0));
+        hintCloseText.SetVAlign(inkEVerticalAlign.Center);
+        hintCloseText.SetMargin(new inkMargin(7.5, 5.0, 5.0, 0.0));
+        hintCloseText.SetSize(new Vector2(100.0, 32.0));
+        hintCloseText.SetFitToContent(true);
+        hintCloseText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintCloseText.BindProperty(n"fontStyle", n"MainColors.ReadableSmall");
+        hintCloseText.BindProperty(n"tintColor", n"MainColors.Red");
+        hintCloseText.Reparent(hintClose);
     }
 }

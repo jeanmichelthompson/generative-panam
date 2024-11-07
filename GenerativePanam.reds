@@ -1,3 +1,20 @@
+@wrapMethod(PlayerPuppet)
+protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpawn>) -> Bool { 
+    wrappedMethod(evt);
+    
+    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+    if IsDefined(modPhoneSystem) {
+        if modPhoneSystem.GetInitialized() {
+            ConsoleLog("Phone system already initialized.");
+        } else {
+            ConsoleLog("Initializing phone system from player spawn hook.");
+            modPhoneSystem.InitializeSystem();
+        }
+    } else {
+        ConsoleLog("Phone system not defined.");
+    }
+}
+
 @wrapMethod(PhoneDialerLogicController)
 private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
     wrappedMethod(contactData);
