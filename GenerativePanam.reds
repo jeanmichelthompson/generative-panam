@@ -4,12 +4,8 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
     
     let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
     if IsDefined(modPhoneSystem) {
-        if modPhoneSystem.GetInitialized() {
-            ConsoleLog("Phone system already initialized.");
-        } else {
-            ConsoleLog("Initializing phone system from player spawn hook.");
-            modPhoneSystem.InitializeSystem();
-        }
+        ConsoleLog("Initializing phone system from player spawn hook.");
+        modPhoneSystem.InitializeSystem();
     } else {
         ConsoleLog("Phone system not defined.");
     }
@@ -143,4 +139,15 @@ private final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> w
         }
     }
     return null;
+}
+
+@wrapMethod(PhoneDialerLogicController)
+public final func Hide() -> Void {
+    wrappedMethod();
+    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+
+    if IsDefined(modPhoneSystem) {
+        modPhoneSystem.TogglePanamSelected(false);
+        modPhoneSystem.ToggleIsTyping(false);
+    }
 }
