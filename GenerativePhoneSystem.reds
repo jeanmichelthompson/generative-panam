@@ -135,7 +135,7 @@ public class GenerativePhoneSystem extends ScriptableService {
     private func ShowModChat() {
         this.chatOpen = true;
         this.BuildChatUi();
-        this.PlaySound(n"ui_menu_map_pin_delete");
+        this.PlaySound(n"ui_menu_map_pin_created");
         this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true);
         LogChannel(n"DEBUG", "Showing mod chat...");
     }
@@ -210,7 +210,7 @@ public class GenerativePhoneSystem extends ScriptableService {
     private func BuildInput() {
         let inkSystem = GameInstance.GetInkSystem();
         let input = HubTextInput.Create();
-        input.SetText("Start Typing...");
+        input.SetText("");
         input.Reparent(this.typedMessageWrapper);
 
         let inputWidget = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
