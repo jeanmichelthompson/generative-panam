@@ -4,7 +4,6 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
     
     let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
     if IsDefined(modPhoneSystem) {
-        ConsoleLog("Initializing phone system from player spawn hook.");
         modPhoneSystem.InitializeSystem();
     } else {
         ConsoleLog("Phone system not defined.");

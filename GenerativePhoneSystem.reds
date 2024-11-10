@@ -26,16 +26,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         LogChannel(n"DEBUG", "Reloading Generative Phone System...");
         this.initialized = false;
         this.InitializeSystem();
-    }
-    
-    public func GetInitialized() -> Bool {
-        return this.initialized;
-    }
 
+        ConsoleLog("Getting HttpRequestSystem.");
+        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+        HttpRequestSystem.TriggerPostRequest("Hey Panam, whatcha up to? :)");
+    }
 
     // Initialize callbacks, widgets, and other necessary components
     private func InitializeSystem() {
-        LogChannel(n"DEBUG", "Initializing Generative Phone System...");
         this.player = GetPlayer(GetGameInstance());
         this.panamSelected = false;
         this.chatOpen = false;
@@ -232,6 +230,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         let inputChild3 = inputChild2.GetWidget(1) as inkText;
         let message = inputChild3.GetText();
         return message;
+    }
+
+    public func GetInitialized() -> Bool {
+        return this.initialized;
+    }
+
+    public func GetChatOpen() -> Bool {
+        return this.chatOpen;
     }
 
     // Function to build a message for the player or NPC
