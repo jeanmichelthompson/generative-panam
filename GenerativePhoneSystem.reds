@@ -23,7 +23,6 @@ public class GenerativePhoneSystem extends ScriptableService {
     private let messengerSlotRoot: wref<inkCanvas>;
     private let chatScrollController: wref<inkScrollController>;
     private let typingIndicator: wref<inkFlex>;
-    private let isGenerating: Bool = false;
 
     private cb func OnReload() {
         LogChannel(n"DEBUG", "Reloading Generative Phone System...");
@@ -67,7 +66,6 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.isTyping = false;
                 let message = this.GetInputText();
                 this.BuildMessage(message, true, true);
-                this.ToggleIsGenerating(true);
             } 
             return;
         }
@@ -94,9 +92,15 @@ public class GenerativePhoneSystem extends ScriptableService {
         }
 
         if Equals(s"\(event.GetKey())", "IK_LeftMouse") {
-            if (!this.chatOpen || this.isTyping || this.isGenerating) {
+            if (!this.chatOpen || this.isTyping ) {
                 return;
             } 
+
+            let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+
+            if HttpRequestSystem.GetIsGenerating() {
+                return;
+            }
 
             this.isTyping = true;
             this.typedMessageText.SetText("Start Typing...");
@@ -138,10 +142,10 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.isTyping = value;
     }
     
-    public func ToggleIsGenerating(value: Bool) {
-        this.isGenerating = value;
-
-        if value {
+    public func UpdateInputUi() {
+        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+        
+        if HttpRequestSystem.GetIsGenerating() {
             let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
             this.typedMessageWrapper.RemoveChildByName(input.GetName());
             this.typedMessageText.SetVisible(true);
@@ -371,6 +375,7 @@ public class GenerativePhoneSystem extends ScriptableService {
                 ConsoleLog("Getting HttpRequestSystem.");
                 let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
                 HttpRequestSystem.TriggerPostRequest(text);
+                HttpRequestSystem.AppendToHistory(text, true);
             }
         } else {
             messageContainer.SetHAlign(inkEHorizontalAlign.Left);
@@ -419,7 +424,9 @@ public class GenerativePhoneSystem extends ScriptableService {
             let panamResponse = panamResponses[i];
             this.BuildMessage(vMessage, true, false);
 
-            if StrLen(panamResponse) > 1000 {
+            if StrLen(panamResponse) == 0 {
+                i += 1;
+            } else if StrLen(panamResponse) > 1000 {
                 let firstHalf = StrLeft(panamResponse, 1000);
                 let secondHalf = StrRight(panamResponse, (StrLen(panamResponse) - 1000));
                 this.BuildMessage(firstHalf, false, false);
@@ -1156,5 +1163,134 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.BuildConversation();
 
         modMessengerSlotRoot.PlayAnimation(animDefRoot);
+    }
+}
+
+public class CustomMessengerNotification extends GenericNotificationController {
+    private let m_animProxy: ref<inkAnimProxy>;
+
+    private let m_messageText: inkTextRef;
+
+    private let m_avatar: inkImageRef;
+
+    private let m_descriptionText: inkTextRef;
+
+    private let m_envelopIcon: inkWidgetRef;
+
+    private let m_interactionsBlackboard: wref<IBlackboard>;
+
+    private let m_deviceBlackboard: wref<IBlackboard>;
+
+    public let m_contactsActiveCallback: ref<CallbackHandle>;
+
+    private let m_messageData: ref<PhoneMessageNotificationViewData>;
+
+    private let m_textSizeLimit: Int32 = 40;
+
+    private let m_journalMgr: wref<JournalManager>;
+
+    protected cb func OnInitialize() -> Bool {
+        super.OnInitialize();
+        this.m_interactionsBlackboard = this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UIInteractions);
+        this.m_deviceBlackboard = this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UI_ComDevice);
+        this.m_contactsActiveCallback = this.m_deviceBlackboard.RegisterDelayedListenerBool(GetAllBlackboardDefs().UI_ComDevice.ContactsActive, this, n"OnContactsActive");
+        this.RegisterToCallback(n"OnNotificationPaused", this, n"OnNotificationPaused");
+        this.RegisterToCallback(n"OnNotificationResumed", this, n"OnNotificationResumed");
+    }
+
+    protected cb func OnUninitialize() -> Bool {
+        this.m_deviceBlackboard.UnregisterDelayedListener(GetAllBlackboardDefs().UI_ComDevice.ContactsActive, this.m_contactsActiveCallback);
+        this.UnregisterFromCallback(n"OnNotificationPaused", this, n"OnNotificationPaused");
+        this.UnregisterFromCallback(n"OnNotificationResumed", this, n"OnNotificationResumed");
+        super.OnUninitialize();
+    }
+
+    protected cb func OnContactsActive(value: Bool) -> Bool {
+        this.GetRootWidget().SetVisible(!value);
+        if !value {
+            this.OnNotificationResumed();
+        } else {
+            this.OnNotificationPaused();
+        };
+    }
+
+    public func InitializeNotification(text: String) {
+        let data: ref<GenericNotificationViewData>;
+        data.title = "Panam Palmer";
+        data.text = text;
+        data.soundEvent = n"ui_jingle_quest_update";
+        data.soundAction = n"ui_jingle_quest_update";
+
+        this.SetNotificationData(data);
+    }
+
+    public func SetNotificationData(notificationData: ref<GenericNotificationViewData>) -> Void {
+        ConsoleLog("SetNotificationData Called");
+        let contactEntry: wref<JournalContact>;
+        let fitToContent: Bool;
+        let messageEntry: wref<JournalPhoneMessage>;
+        let playbackOptions: inkAnimOptions;
+        let poiHash: Uint32;
+        let smsText: String;
+        let texturePart: CName;
+        if IsDefined(this.m_animProxy) {
+            this.m_animProxy.Stop();
+            this.m_animProxy = null;
+        };
+        this.m_customInputActionName = n"None";
+        this.m_messageData = notificationData as PhoneMessageNotificationViewData;
+        if IsDefined(this.m_messageData) {
+            this.m_journalMgr = GameInstance.GetJournalManager(this.GetPlayerControlledObject().GetGame());
+            playbackOptions.toMarker = n"OutroStart";
+            smsText = this.m_messageData.SMSText;
+            inkTextRef.SetText(this.m_messageText, smsText);
+            fitToContent = StrLen(smsText) < this.m_textSizeLimit;
+            inkWidgetRef.SetFitToContent(this.m_messageText, fitToContent);
+            inkTextRef.SetLocalizedTextScript(this.m_descriptionText, n"Story-base-gameplay-gui-widgets-notifications-quest_update-_localizationString9");
+            inkWidgetRef.SetVisible(this.m_envelopIcon, true);
+            this.m_animProxy = this.PlayLibraryAnimation(this.m_messageData.animation, playbackOptions);
+            this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnNotificationShown");
+            this.m_customInputActionName = n"NotificationOpenSMS";
+        } else {
+            ConsoleLog("Notification data is not defined");
+        };
+        super.SetNotificationData(notificationData);
+    }
+
+    protected cb func OnNotificationPaused() -> Bool {
+        if IsDefined(this.m_animProxy) {
+        this.m_animProxy.Pause();
+        };
+        super.OnNotificationPaused();
+    }
+
+    protected cb func OnNotificationResumed() -> Bool {
+        if IsDefined(this.m_animProxy) {
+        this.m_animProxy.Resume();
+        };
+        super.OnNotificationResumed();
+    }
+
+    protected cb func OnNotificationShown(anim: ref<inkAnimProxy>) -> Bool {
+        this.SetNotificationShown();
+    }
+
+    private final const func GetNetworkBlackboardDef() -> ref<NetworkBlackboardDef> {
+        return GetAllBlackboardDefs().NetworkBlackboard;
+    }
+
+    private final const func GetNetworkBlackboard() -> ref<IBlackboard> {
+        return GameInstance.GetBlackboardSystem(GetGameInstance()).Get(this.GetNetworkBlackboardDef());
+    }
+
+    private func OnActionTriggered() -> Void {
+        let linkStatus: EPersonalLinkConnectionStatus = IntEnum<EPersonalLinkConnectionStatus>(this.GetNetworkBlackboard().GetInt(this.GetNetworkBlackboardDef().PersonalLinkStatus));
+        if NotEquals(linkStatus, EPersonalLinkConnectionStatus.CONNECTING) {
+            this.SetNotificationShown();
+        };
+    }
+
+    private final func SetNotificationShown() -> Void {
+        this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UIGameData).SetInt(GetAllBlackboardDefs().UIGameData.NotificationJournalHash, this.m_messageData.entryHash);
     }
 }

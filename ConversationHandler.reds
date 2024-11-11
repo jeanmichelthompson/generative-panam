@@ -8,6 +8,8 @@ public class HttpRequestSystem extends ScriptableSystem {
   private let playerInput: String;
   public let vMessages: array<String>;
   public let panamResponses: array<String>;
+  private let isGenerating: Bool = false;
+  private let notificationSystem: wref<CustomMessengerNotification>;
   private let systemPrompt: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nSpeak like a girlfriend and life partner. Flirt with V often.\nUse elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id|>\n\n";
 
   private let systemPromptVariation: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nSpeak like a friend who’s always there. Keep things casual but meaningful.\nUse ellipses (...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id>\n\n";
@@ -53,6 +55,9 @@ public class HttpRequestSystem extends ScriptableSystem {
     AsyncHttpClient.Post(callback, "https://stablehorde.net/api/v2/generate/text/async", jsonRequest.ToString(), headers);
     ConsoleLog("== API POST Request ==");
     ConsoleLog(s"\(jsonRequest.ToString("\t"))");
+    this.isGenerating = true;
+    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+    modPhoneSystem.UpdateInputUi();
   }
 
   // Get request
@@ -116,17 +121,29 @@ public class HttpRequestSystem extends ScriptableSystem {
     let item = generations.GetItem(0u) as JsonObject;
     let text = item.GetKeyString("text");
     
-    this.ToggleTypingIndicator(false);
-    // If text is greater than 1000 in length, split it into two messages and build each
-    if StrLen(text) > 1000 {
-      let firstHalf = StrLeft(text, 1000);
-      let secondHalf = StrRight(text, (StrLen(text) - 1000));
-      this.BuildTextMessage(firstHalf);
-      this.BuildTextMessage(secondHalf);
+    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+    if modPhoneSystem.GetChatOpen() {
+      this.ToggleTypingIndicator(false);
+      // If text is greater than 1000 in length, split it into two messages and build each
+      if StrLen(text) > 1000 {
+        let firstHalf = StrLeft(text, 1000);
+        let secondHalf = StrRight(text, (StrLen(text) - 1000));
+        this.BuildTextMessage(firstHalf);
+        this.BuildTextMessage(secondHalf);
+      } else {
+        this.BuildTextMessage(text);
+      }
     } else {
-      this.BuildTextMessage(text);
+      if !IsDefined(this.notificationSystem) {
+        this.notificationSystem = new CustomMessengerNotification();
+      }
+      ConsoleLog("Initializing notification...");
+      this.notificationSystem.InitializeNotification(text);
     }
-    this.AppendToHistory(this.playerInput, text);
+
+    this.isGenerating = false;
+    modPhoneSystem.UpdateInputUi();
+    this.AppendToHistory(text, false);
   }
 
   private func DelayedGet() {
@@ -143,7 +160,6 @@ public class HttpRequestSystem extends ScriptableSystem {
     if (IsDefined(modPhoneSystem) && modPhoneSystem.GetChatOpen()) {
       modPhoneSystem.BuildMessage(text, false, true);
     }
-    modPhoneSystem.ToggleIsGenerating(false);
   }
 
   private func ToggleTypingIndicator(value: Bool) {
@@ -153,14 +169,23 @@ public class HttpRequestSystem extends ScriptableSystem {
     }
   }
 
-  // Add new messages to history arrays and maintain a rolling window
-  public func AppendToHistory(vMessage: String, panamResponse: String) {
-    ArrayPush(this.vMessages, vMessage);
-    ArrayPush(this.panamResponses, panamResponse);
+  public func GetIsGenerating() -> Bool {
+    return this.isGenerating;
+  }
 
-    // Limit history to the last 10 exchanges
-    if ArraySize(this.vMessages) > 10 {
+  // Add new messages to history arrays and maintain a rolling window
+  public func AppendToHistory(message: String, fromPlayer: Bool) {
+    if fromPlayer {
+      ArrayPush(this.vMessages, message);
+    } else {
+      ArrayPush(this.panamResponses, message);
+    }
+
+    // Limit history to the last 20 exchanges
+    if ArraySize(this.vMessages) > 20 {
       ArrayErase(this.vMessages, 0);
+    }
+    if ArraySize(this.panamResponses) > 20 {
       ArrayErase(this.panamResponses, 0);
     }
   }

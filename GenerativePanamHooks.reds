@@ -150,3 +150,9 @@ public final func Hide() -> Void {
         modPhoneSystem.ToggleIsTyping(false);
     }
 }
+
+@wrapMethod(MessengerNotification)
+protected cb func OnNotificationShown(anim: ref<inkAnimProxy>) -> Bool {
+    wrappedMethod(anim);
+    ConsoleLog(s"\(this)");
+}
