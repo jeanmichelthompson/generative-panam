@@ -21,15 +21,14 @@ public class GenerativePhoneSystem extends ScriptableService {
     private let typedMessageWrapper: wref<inkHorizontalPanel>;
     private let chatInputHint: wref<inkImage>;
     private let messengerSlotRoot: wref<inkCanvas>;
+    private let chatScrollController: wref<inkScrollController>;
+    private let typingIndicator: wref<inkFlex>;
+    private let isGenerating: Bool = false;
 
     private cb func OnReload() {
         LogChannel(n"DEBUG", "Reloading Generative Phone System...");
         this.initialized = false;
         this.InitializeSystem();
-
-        ConsoleLog("Getting HttpRequestSystem.");
-        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
-        HttpRequestSystem.TriggerPostRequest("Hey Panam, whatcha up to? :)");
     }
 
     // Initialize callbacks, widgets, and other necessary components
@@ -40,6 +39,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.isTyping = false;
         this.callbackSystem = GameInstance.GetCallbackSystem();
         this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
+        this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
         let inkSystem = GameInstance.GetInkSystem();
         let virtualWindow = inkSystem.GetLayer(n"inkHUDLayer").GetVirtualWindow();
         let virtualWindowRoot = virtualWindow.GetWidget(0) as inkCanvas;
@@ -67,11 +67,7 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.isTyping = false;
                 let message = this.GetInputText();
                 this.BuildMessage(message, true, true);
-                let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
-                this.typedMessageWrapper.RemoveChildByName(input.GetName());
-                this.typedMessageText.SetVisible(true);
-                this.typedMessageText.SetText("Send a message.");
-                this.chatInputHint.SetTexturePart(n"mouse_left");
+                this.ToggleIsGenerating(true);
             } 
             return;
         }
@@ -98,7 +94,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         }
 
         if Equals(s"\(event.GetKey())", "IK_LeftMouse") {
-            if (!this.chatOpen || this.isTyping) {
+            if (!this.chatOpen || this.isTyping || this.isGenerating) {
                 return;
             } 
 
@@ -109,6 +105,17 @@ public class GenerativePhoneSystem extends ScriptableService {
 
             this.BuildInput();
         }
+    }
+
+    private cb func OnAxisInput(event: ref<AxisInputEvent>) {
+        if Equals(s"\(event.GetKey())", "IK_MouseZ") {
+            if Equals(event.GetValue(), 1.0) {
+                this.chatScrollController.Scroll(1.0, true);
+            } else if Equals(event.GetValue(), -1.0) {
+                this.chatScrollController.Scroll(-1.0, true);
+            }
+        }
+        
     }
 
     public func TogglePanamSelected(value: Bool) {
@@ -123,11 +130,29 @@ public class GenerativePhoneSystem extends ScriptableService {
                 .SetRunMode(CallbackRunMode.OncePerTarget);
         } else {
             this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
+            this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
         }
     }
 
     public func ToggleIsTyping(value: Bool) {
         this.isTyping = value;
+    }
+    
+    public func ToggleIsGenerating(value: Bool) {
+        this.isGenerating = value;
+
+        if value {
+            let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
+            this.typedMessageWrapper.RemoveChildByName(input.GetName());
+            this.typedMessageText.SetVisible(true);
+            this.typedMessageText.SetText("Send a message.");
+            this.typedMessageText.SetOpacity(0.2);
+            this.chatInputHint.SetTexturePart(n"mouse_left");
+            this.chatInputHint.SetOpacity(0.2);
+        } else {
+            this.typedMessageText.SetOpacity(1);
+            this.chatInputHint.SetOpacity(1);
+        }
     }
 
     private func ShowModChat() {
@@ -135,6 +160,8 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.BuildChatUi();
         this.PlaySound(n"ui_menu_map_pin_created");
         this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true);
+        this.callbackSystem.RegisterCallback(n"Input/Axis", this, n"OnAxisInput", true);
+        this.chatScrollController.SetScrollPosition(1.0);
         LogChannel(n"DEBUG", "Showing mod chat...");
     }
 
@@ -240,6 +267,17 @@ public class GenerativePhoneSystem extends ScriptableService {
         return this.chatOpen;
     }
 
+    public func ToggleTypingIndicator(value: Bool) {
+        if value {
+            this.typingIndicator.SetVisible(!this.typingIndicator.IsVisible());
+            if this.typingIndicator.IsVisible() {
+                this.PlaySound(n"ui_messenger_typing");
+            }
+        } else {
+            this.typingIndicator.SetVisible(false);
+        }
+    }
+
     // Function to build a message for the player or NPC
     private func BuildMessage(text: String, fromPlayer: Bool, useAnim: Bool) {
         if !IsDefined(this.messageParent) {
@@ -329,6 +367,11 @@ public class GenerativePhoneSystem extends ScriptableService {
             messageBorder.SetTexturePart(n"msgBuble_reply_fg");
             messageBorder.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(198u), Cast(255u)));
             messageText.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(188u), Cast(255u)));
+            if useAnim {
+                ConsoleLog("Getting HttpRequestSystem.");
+                let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+                HttpRequestSystem.TriggerPostRequest(text);
+            }
         } else {
             messageContainer.SetHAlign(inkEHorizontalAlign.Left);
             messageBackground.SetTexturePart(n"msgBuble_bg");
@@ -360,6 +403,31 @@ public class GenerativePhoneSystem extends ScriptableService {
 
             message.PlayAnimation(animDefMessage);
             this.PlaySound(n"ui_messenger_recieved");
+        }
+
+        this.chatScrollController.SetScrollPosition(1.0);
+    }
+
+    private func BuildConversation() {
+        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+        let vMessages = HttpRequestSystem.vMessages;
+        let panamResponses = HttpRequestSystem.panamResponses;
+
+        let i = 0;
+        while i < ArraySize(vMessages) {
+            let vMessage = vMessages[i];
+            let panamResponse = panamResponses[i];
+            this.BuildMessage(vMessage, true, false);
+
+            if StrLen(panamResponse) > 1000 {
+                let firstHalf = StrLeft(panamResponse, 1000);
+                let secondHalf = StrRight(panamResponse, (StrLen(panamResponse) - 1000));
+                this.BuildMessage(firstHalf, false, false);
+                this.BuildMessage(secondHalf, false, false);
+            } else {
+                this.BuildMessage(panamResponse, false, false);
+            }
+            i += 1;
         }
     }
 
@@ -603,13 +671,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         conversation.SetSize(new Vector2(1300.0, 1400.0));
         conversation.SetAffectsLayoutWhenHidden(true);
         conversation.SetChildOrder(inkEChildOrder.Backward);
+        conversation.SetInteractive(true);
         conversation.Reparent(innerWrapper);
 
         let messageScrollArea = new inkScrollArea();
         messageScrollArea.SetName(n"MessagesScrollArea");
         messageScrollArea.SetMargin(new inkMargin(20.0, 0.0, 35.0, 0.0));
         messageScrollArea.SetAnchor(inkEAnchor.Fill);
-        messageScrollArea.useInternalMask = false;
+        messageScrollArea.SetUseInternalMask(false);
         messageScrollArea.SetSize(new Vector2(600.0, 600.0));
         messageScrollArea.Reparent(conversation);
 
@@ -634,22 +703,21 @@ public class GenerativePhoneSystem extends ScriptableService {
         messagesList.SetChildMargin(new inkMargin(0.0, 5.0, 0.0, 0.0));
         messagesList.Reparent(scrollAreaContainer);
         this.messageParent = messagesList;
-
-        this.BuildMessage("This is a static test message. I am the god of all UI building.", true, false);
-
-        this.BuildMessage("This is a reply message.", false, false);
-
+        
         let typingIndicator = new inkFlex();
         typingIndicator.SetName(n"typing_indicator");
         typingIndicator.SetVAlign(inkEVerticalAlign.Bottom);
         typingIndicator.SetSize(new Vector2(100.0, 100.0));
+        typingIndicator.SetVisible(false);
         typingIndicator.Reparent(scrollAreaContainer);
+        this.typingIndicator = typingIndicator;
 
         let indicatorContainer = new inkFlex();
         indicatorContainer.SetName(n"container");
         indicatorContainer.SetVAlign(inkEVerticalAlign.Top);
         indicatorContainer.SetMargin(new inkMargin(0.0, 0.0, 0.0, 25.0));
         indicatorContainer.SetSize(new Vector2(100.0, 100.0));
+        indicatorContainer.Reparent(typingIndicator);
 
         let indicatorContainer2 = new inkVerticalPanel();
         indicatorContainer2.SetName(n"container");
@@ -657,6 +725,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         indicatorContainer2.SetVAlign(inkEVerticalAlign.Top);
         indicatorContainer2.SetFitToContent(true);
         indicatorContainer2.SetStyle(r"base\\gameplay\\gui\\fullscreen\\phone_quest_menu\\messenger.inkstyle");
+        indicatorContainer2.Reparent(indicatorContainer);
 
         let horizontalPanelWidget16 = new inkHorizontalPanel();
         horizontalPanelWidget16.SetName(n"inkHorizontalPanelWidget16");
@@ -752,6 +821,7 @@ public class GenerativePhoneSystem extends ScriptableService {
         conversationMask.SetTexturePart(n"gradMask_journal_description");
         conversationMask.SetDynamicTexture(n"entry_mask");
         conversationMask.SetOpacity(0.01);
+        conversationMask.SetAnchor(inkEAnchor.Fill);
         conversationMask.SetSize(new Vector2(1920.0, 1500.0));
         conversationMask.Reparent(conversation);
 
@@ -788,6 +858,24 @@ public class GenerativePhoneSystem extends ScriptableService {
         sliderBackground.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
         sliderBackground.BindProperty(n"tintColor", n"MainColors.Fullscreen_PrimaryBackgroundDarkest");
         sliderBackground.Reparent(slidingArea);
+
+        let sliderController = new inkSliderController();
+        sliderController.slidingAreaRef = inkWidgetRef.Create(slidingArea);
+        sliderController.handleRef = inkWidgetRef.Create(handle);
+        sliderController.direction = inkESliderDirection.Vertical;
+        sliderController.autoSizeHandle = true;
+        sliderController.percentHandleSize = 0.4;
+        sliderController.minHandleSize = 40.0;
+        sliderController.Setup(0, 1, 0, 0);
+
+        let scrollController = new inkScrollController();
+        scrollController.ScrollArea = inkScrollAreaRef.Create(messageScrollArea);
+        scrollController.VerticalScrollBarRef = inkWidgetRef.Create(slidingArea);
+        scrollController.autoHideVertical = true;
+
+        slidingArea.AttachController(sliderController);
+        conversation.AttachController(scrollController);
+        this.chatScrollController = scrollController;
 
         let contentFill = new inkImage();
         contentFill.SetName(n"contentFill");
@@ -1064,6 +1152,8 @@ public class GenerativePhoneSystem extends ScriptableService {
         let animDefRoot = new inkAnimDef();
         animDefRoot.AddInterpolator(translateAnimRoot);
         animDefRoot.AddInterpolator(alphaAnim);
+
+        this.BuildConversation();
 
         modMessengerSlotRoot.PlayAnimation(animDefRoot);
     }
