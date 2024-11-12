@@ -9,10 +9,12 @@ public class HttpRequestSystem extends ScriptableSystem {
   public let vMessages: array<String>;
   public let panamResponses: array<String>;
   private let isGenerating: Bool = false;
-  private let notificationSystem: wref<CustomMessengerNotification>;
-  private let systemPrompt: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nSpeak like a girlfriend and life partner. Flirt with V often.\nUse elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id|>\n\n";
+  private let noWorkers: Bool = false;
+  private let getAttempt: Int32 = 0;
+  private let phoneController: wref<NewHudPhoneGameController>;
+  private let systemPrompt: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a girlfriend and life partner. Flirt with V often.\nUse elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id|>\n\n";
 
-  private let systemPromptVariation: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nSpeak like a friend who’s always there. Keep things casual but meaningful.\nUse ellipses (...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id>\n\n";
+  private let systemPromptVariation: String = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect. You're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands outside of Night City.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a friend who’s always there. Keep things casual but meaningful.\nUse ellipses (...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending.<|eot_id>\n\n";
 
 
   /// Lifecycle ///
@@ -65,6 +67,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     ConsoleLog("== API GET Request ==");
     let callback = HttpCallback.Create(this, n"OnGetResponse");
     AsyncHttpClient.Get(callback, "https://stablehorde.net/api/v2/generate/text/status/" + this.generationId);
+    this.getAttempt += 1;
     ConsoleLog("Sending GET request...");
   }
 
@@ -84,6 +87,7 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     let responseObj = json as JsonObject;
     this.generationId = responseObj.GetKeyString("id");
+    this.noWorkers = IsDefined(responseObj.GetKey("message"));
 
     ConsoleLog("== JSON POST Response ==");
     ConsoleLog(s"\(json.ToString("\t"))");
@@ -94,6 +98,9 @@ public class HttpRequestSystem extends ScriptableSystem {
     ConsoleLog("== API GET Response ==");
     if !Equals(response.GetStatus(), HttpStatus.OK) {
       LogChannel(n"DEBUG", s"Request failed, status code: \(response.GetStatusCode())");
+      if Equals(response.GetStatusCode(), 404) {
+        this.FailedToGet();
+      }
       return;
     }
     let json = response.GetJson();
@@ -108,15 +115,26 @@ public class HttpRequestSystem extends ScriptableSystem {
     if NotEquals(status, 1) {
       ConsoleLog("== JSON Response ==");
       ConsoleLog(s"\(json.ToString("\t"))");
-      ConsoleLog("== Status ==");
-      ConsoleLog("Generation is not finished yet");
+      this.ToggleTypingIndicator(true);
+      if this.noWorkers {
+        let text = "so sorry v, really busy rn, might need a sec.";
+        this.noWorkers = false;
+        this.BuildTextMessage(text);
+        this.AppendToHistory(text, false);
+      }
+
+      if this.getAttempt > 30 {
+        this.FailedToGet();
+        return;
+      }
       this.DelayedGet();
       return;
     }
 
     ConsoleLog("== JSON Response ==");
     ConsoleLog(s"\(json.ToString("\t"))");
-
+    
+    this.isGenerating = false;
     let generations = responseObj.GetKey("generations") as JsonArray;
     let item = generations.GetItem(0u) as JsonObject;
     let text = item.GetKeyString("text");
@@ -130,20 +148,36 @@ public class HttpRequestSystem extends ScriptableSystem {
         let secondHalf = StrRight(text, (StrLen(text) - 1000));
         this.BuildTextMessage(firstHalf);
         this.BuildTextMessage(secondHalf);
+        modPhoneSystem.UpdateInputUi();
       } else {
         this.BuildTextMessage(text);
       }
     } else {
-      if !IsDefined(this.notificationSystem) {
-        this.notificationSystem = new CustomMessengerNotification();
+        if !IsDefined(this.phoneController) {
+        let inkSystem = GameInstance.GetInkSystem();
+        let layers = inkSystem.GetLayers();
+        for layer in layers {
+          for controller in layer.GetGameControllers() {
+            if Equals(s"\(controller.GetClassName())", "NewHudPhoneGameController") {
+                ConsoleLog("Found NewHudPhoneGameController.");
+                this.phoneController = controller as NewHudPhoneGameController;
+            }
+          }
+        }
       }
-      ConsoleLog("Initializing notification...");
-      this.notificationSystem.InitializeNotification(text);
+
+      this.phoneController.PushCustomSMSNotification(text);
     }
 
-    this.isGenerating = false;
-    modPhoneSystem.UpdateInputUi();
     this.AppendToHistory(text, false);
+  }
+
+  private func FailedToGet() {
+      let text = "sorry v, turns out I just can't talk rn, text me later!";
+      this.BuildTextMessage(text);
+      this.AppendToHistory(text, false);
+      this.isGenerating = false;
+      this.getAttempt = 0;
   }
 
   private func DelayedGet() {
@@ -152,7 +186,6 @@ public class HttpRequestSystem extends ScriptableSystem {
     let isAffectedByTimeDilation: Bool = false;
 
     delaySystem.DelayCallback(HttpDelayCallback.Create(), delay, isAffectedByTimeDilation);
-    this.ToggleTypingIndicator(true);
   }
 
   private func BuildTextMessage(text: String) {

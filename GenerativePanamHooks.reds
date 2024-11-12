@@ -152,7 +152,26 @@ public final func Hide() -> Void {
 }
 
 @wrapMethod(MessengerNotification)
-protected cb func OnNotificationShown(anim: ref<inkAnimProxy>) -> Bool {
-    wrappedMethod(anim);
-    ConsoleLog(s"\(this)");
+public cb func SetNotificationData(notificationData: ref<GenericNotificationViewData>) -> Void {
+    wrappedMethod(notificationData);
+    ConsoleLog("Setting notification data.");
 }
+
+@addMethod(NewHudPhoneGameController)
+public final func PushCustomSMSNotification(text: String) -> Void {
+    let notificationData: gameuiGenericNotificationData;
+    let userData: ref<PhoneMessageNotificationViewData> = new PhoneMessageNotificationViewData();
+    let action = new OpenPhoneMessageAction();
+    action.m_phoneSystem = this.m_PhoneSystem;
+    userData.title = "Panam Palmer";
+    userData.SMSText = text;
+    userData.animation = n"notification_phone_MSG";
+    userData.soundEvent = n"PhoneSmsPopup";
+    userData.soundAction = n"OnOpen";
+    userData.action = action;
+    notificationData.time = 6.70;
+    notificationData.widgetLibraryItemName = n"notification_message";
+    notificationData.notificationData = userData;
+    this.AddNewNotificationData(notificationData);
+}
+
