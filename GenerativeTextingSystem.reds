@@ -1,7 +1,7 @@
 import Codeware.*
 import Codeware.UI.*
 
-public class GenerativePhoneSystem extends ScriptableService {
+public class GenerativeTextingSystem extends ScriptableService {
     private let initialized: Bool = false;
     private let callbackSystem: wref<CallbackSystem>;
     private let panamSelected: Bool = false;
@@ -24,8 +24,69 @@ public class GenerativePhoneSystem extends ScriptableService {
     private let chatScrollController: wref<inkScrollController>;
     private let typingIndicator: wref<inkFlex>;
 
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Romance")
+    @runtimeProperty("ModSettings.description", "Controls whether the responses are predisposed to romance.")
+    public let romance: Bool = false;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Temperature")
+    @runtimeProperty("ModSettings.description", "Controls the randomness of the generated text. Lower = more predictable, higher = more random.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "2.0")
+    public let temperature: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Top K")
+    @runtimeProperty("ModSettings.description", "Limits the token pool to the K most likely tokens. A lower number is more consistent but less creative.")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "1000")
+    public let top_k: Int32 = 0;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Top P")
+    @runtimeProperty("ModSettings.description", "Limits the token pool to however many tokens it takes for their probabilities to add up to P. A lower number is more consistent but less creative.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "1.0")
+    public let top_p: Float = 0.95;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Top A")
+    @runtimeProperty("ModSettings.description", "The number of tokens chosen from the most likely options is automatically determined based on the likelihood distribution of the options, but instead of choosing the Top P or Top K tokens, it chooses all tokens with probabilities above a certain threshold.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "1.0")
+    public let top_a: Float = 0.0;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Tail Free Sampling (TFS)")
+    @runtimeProperty("ModSettings.description", "Removes the least probable tokens from consideration during text generation, which can improve the quality and coherence of the generated text.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "1.0")
+    public let tfs: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Minimum Probability (Min P)")
+    @runtimeProperty("ModSettings.description", "Limits the token pool by cutting off low-probability tokens relative to the top token. Produces more coherent responses but can also worsen repetition if set too high.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "1.0")
+    public let min_p: Float = 0.05;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Typical P")
+    @runtimeProperty("ModSettings.description", "Selects tokens randomly from the list of possible tokens, with each token having an equal chance of being selected. Produces responses that are more diverse but may also be less coherent.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.0")
+    @runtimeProperty("ModSettings.max", "1.0")
+    public let typical: Float = 1.0;
+
     private cb func OnReload() {
-        LogChannel(n"DEBUG", "Reloading Generative Phone System...");
+        ConsoleLog("Reloading Generative Texting System...");
         this.initialized = false;
         this.InitializeSystem();
     }
@@ -47,12 +108,14 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.contactListSlot = this.parent.GetWidget(9) as inkCanvas;
         this.defaultChatUi = this.parent.GetWidget(11) as inkCanvas;
 
-        this.InitializeDefaultPhoneController(false);
+        ModSettings.RegisterListenerToClass(this);
 
+        this.InitializeDefaultPhoneController(false);
         this.SetupChatContainer();
 
         this.initialized = true;
-        LogChannel(n"DEBUG", "Generative Phone System initialized");
+
+        ConsoleLog("Generative Texting System initialized");
     }
 
     // Handle key input events
@@ -66,7 +129,9 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.isTyping = false;
                 let message = this.GetInputText();
                 this.BuildMessage(message, true, true);
-            } 
+            } else {
+                this.PlaySound(n"ui_menu_mouse_click");
+            }
             return;
         }
 
@@ -75,7 +140,6 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.HidePhoneUI();
                 this.ShowModChat();
             } else {
-                ConsoleLog(s"Chat Open: \(this.chatOpen), Panam Selected: \(this.panamSelected)");
                 return;
             }
         }
@@ -86,6 +150,14 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.chatOpen = false;
                 this.ShowPhoneUI();
                 this.HideModChat();
+            } else {
+                return;
+            }
+        }
+
+        if Equals(s"\(event.GetKey())", "IK_R") {
+            if (this.chatOpen && !this.isTyping) {
+                this.ResetConversation();
             } else {
                 return;
             }
@@ -119,7 +191,14 @@ public class GenerativePhoneSystem extends ScriptableService {
                 this.chatScrollController.Scroll(-1.0, true);
             }
         }
-        
+    }
+
+    private func ResetConversation() {
+        ConsoleLog("Resetting conversation...");
+        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+        HttpRequestSystem.ResetConversation();
+        this.messageParent.RemoveAllChildren();
+        this.PlaySound(n"ui_menu_map_pin_off");
     }
 
     public func TogglePanamSelected(value: Bool) {
@@ -165,13 +244,13 @@ public class GenerativePhoneSystem extends ScriptableService {
         this.PlaySound(n"ui_menu_map_pin_created");
         this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true);
         this.callbackSystem.RegisterCallback(n"Input/Axis", this, n"OnAxisInput", true);
-        this.chatScrollController.SetScrollPosition(1.0);
-        LogChannel(n"DEBUG", "Showing mod chat...");
+        if IsDefined(this.chatScrollController) {
+            this.chatScrollController.SetScrollPosition(1.0);
+        }
     }
 
     private func HideModChat() {
         this.chatContainer.RemoveAllChildren();
-        LogChannel(n"DEBUG", "Hiding mod chat...");
     }
 
     // Function to hide the default phone UI
@@ -181,9 +260,7 @@ public class GenerativePhoneSystem extends ScriptableService {
             this.contactListSlot.SetVisible(false);
             this.parent.ReorderChild(this.chatContainer, 12);
             this.parent.ReorderChild(this.defaultChatUi, 14);
-            ConsoleLog("Disabling contacts input...");
         } else {
-            LogChannel(n"DEBUG", "defaultPhoneController is not defined, initializing...");
             this.InitializeDefaultPhoneController(true);
         }
     }
@@ -195,9 +272,7 @@ public class GenerativePhoneSystem extends ScriptableService {
             this.contactListSlot.SetVisible(true);
             this.parent.ReorderChild(this.defaultChatUi, 12);
             this.parent.ReorderChild(this.chatContainer, 14);
-            ConsoleLog("Enabling contacts input...");
         } else {
-            LogChannel(n"DEBUG", "defaultPhoneController or contactListSlot not defined, initializing...");
             this.InitializeDefaultPhoneController(false);
             this.ShowPhoneUI();
         }
@@ -372,7 +447,6 @@ public class GenerativePhoneSystem extends ScriptableService {
             messageBorder.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(198u), Cast(255u)));
             messageText.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(188u), Cast(255u)));
             if useAnim {
-                ConsoleLog("Getting HttpRequestSystem.");
                 let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
                 HttpRequestSystem.TriggerPostRequest(text);
                 HttpRequestSystem.AppendToHistory(text, true);
@@ -436,6 +510,8 @@ public class GenerativePhoneSystem extends ScriptableService {
             }
             i += 1;
         }
+
+        this.UpdateInputUi();
     }
 
     private func BuildChatUi() {
@@ -1098,6 +1174,49 @@ public class GenerativePhoneSystem extends ScriptableService {
         wrapperInputHints.SetTranslation(new Vector2(0.0, 25.0));
         wrapperInputHints.SetChildMargin(new inkMargin(30.0, 0.0, 0.0, 0.0));
         wrapperInputHints.Reparent(rootWrapper);
+
+        let hintReset = new inkHorizontalPanel();
+        hintReset.SetName(n"hint_reset");
+        hintReset.SetAnchor(inkEAnchor.TopRight);
+        hintReset.SetAnchorPoint(new Vector2(1, 0));
+        hintReset.SetHAlign(inkEHorizontalAlign.Left);
+        hintReset.SetVAlign(inkEVerticalAlign.Top);
+        hintReset.SetFitToContent(true);
+        hintReset.Reparent(wrapperInputHints);
+
+        let hintResetIcon = new inkImage();
+        hintResetIcon.SetName(n"inputIcon");
+        hintResetIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\input\\icons_keyboard.inkatlas");
+        hintResetIcon.SetTexturePart(n"kb_r");
+        hintResetIcon.SetSize(new Vector2(64.0, 64.0));
+        hintResetIcon.SetTileHAlign(inkEHorizontalAlign.Left);
+        hintResetIcon.SetTileVAlign(inkEVerticalAlign.Top);
+        hintResetIcon.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        hintResetIcon.SetAnchor(inkEAnchor.Centered);
+        hintResetIcon.SetHAlign(inkEHorizontalAlign.Center);
+        hintResetIcon.SetVAlign(inkEVerticalAlign.Center);
+        hintResetIcon.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintResetIcon.BindProperty(n"tintColor", n"MainColors.Blue");
+        hintResetIcon.Reparent(hintReset);
+
+        let hintResetText = new inkText();
+        hintResetText.SetName(n"action");
+        hintResetText.SetText("Reset");
+        hintResetText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        hintResetText.SetFontStyle(n"Semi-Bold");
+        hintResetText.SetFontSize(38);
+        hintResetText.SetLetterCase(textLetterCase.UpperCase);
+        hintResetText.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        hintResetText.SetAnchor(inkEAnchor.TopRight);
+        hintResetText.SetAnchorPoint(new Vector2(1, 0));
+        hintResetText.SetVAlign(inkEVerticalAlign.Center);
+        hintResetText.SetMargin(new inkMargin(7.5, 5.0, 5.0, 0.0));
+        hintResetText.SetSize(new Vector2(100.0, 32.0));
+        hintResetText.SetFitToContent(true);
+        hintResetText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintResetText.BindProperty(n"fontStyle", n"MainColors.ReadableSmall");
+        hintResetText.BindProperty(n"tintColor", n"MainColors.Red");
+        hintResetText.Reparent(hintReset);
 
         let hintClose = new inkHorizontalPanel();
         hintClose.SetName(n"hint_close");

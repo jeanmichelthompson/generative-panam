@@ -2,11 +2,11 @@
 protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpawn>) -> Bool { 
     wrappedMethod(evt);
     
-    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
-    if IsDefined(modPhoneSystem) {
-        modPhoneSystem.InitializeSystem();
+    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
+    if IsDefined(modTextingSystem) {
+        modTextingSystem.InitializeSystem();
     } else {
-        ConsoleLog("Phone system not defined.");
+        ConsoleLog("Texting system not defined.");
     }
 }
 
@@ -14,17 +14,17 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
 private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
     wrappedMethod(contactData);
 
-    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
 
     if contactData != null {
         let contactName = contactData.contactId;
 
         // Check if the selected contact is Panam Palmer
         if Equals(contactName, "panam") {
-            if modPhoneSystem != null {
-                modPhoneSystem.TogglePanamSelected(true);
+            if modTextingSystem != null {
+                modTextingSystem.TogglePanamSelected(true);
             }
-            // Assuming m_contactList is the main container holding all contact entries
+
             let contactListWidget = inkWidgetRef.Get(this.m_contactsList) as inkCompoundWidget;
             if IsDefined(contactListWidget) {
 
@@ -59,7 +59,6 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                                         hintMod.SetAnchor(inkEAnchor.TopRight);
                                         hintMod.SetVAlign(inkEVerticalAlign.Center);
                                         hintMod.SetHAlign(inkEHorizontalAlign.Right);
-                                        ConsoleLog("Adding modded input hint to UI.");
 
                                         // Add icon and text to hint_mod
                                         let keyWidget = hintMod.AddChild(n"inkImage") as inkImage;
@@ -97,13 +96,9 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
 
                                         hintsHolderWidget.ReorderChild(hintMod, 0);
                                         
-                                    } else {
-                                        ConsoleLog("Failed to add hint_mod to hints_holder.");
-                                    }
+                                    } 
                                 }
-                            } else {
-                                ConsoleLog("hints_holder not found in Panam's entry.");
-                            }
+                            } 
                             break;
                         }
                     }
@@ -113,8 +108,8 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                 ConsoleLog("contactListWidget not found.");
             }
         } else {
-            if modPhoneSystem != null {
-                modPhoneSystem.TogglePanamSelected(false);
+            if modTextingSystem != null {
+                modTextingSystem.TogglePanamSelected(false);
             }
         }
     }
@@ -143,18 +138,12 @@ private final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> w
 @wrapMethod(PhoneDialerLogicController)
 public final func Hide() -> Void {
     wrappedMethod();
-    let modPhoneSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativePhoneSystem") as GenerativePhoneSystem;
+    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
 
-    if IsDefined(modPhoneSystem) {
-        modPhoneSystem.TogglePanamSelected(false);
-        modPhoneSystem.ToggleIsTyping(false);
+    if IsDefined(modTextingSystem) {
+        modTextingSystem.TogglePanamSelected(false);
+        modTextingSystem.ToggleIsTyping(false);
     }
-}
-
-@wrapMethod(MessengerNotification)
-public cb func SetNotificationData(notificationData: ref<GenericNotificationViewData>) -> Void {
-    wrappedMethod(notificationData);
-    ConsoleLog("Setting notification data.");
 }
 
 @addMethod(NewHudPhoneGameController)
