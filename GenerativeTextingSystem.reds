@@ -4,7 +4,7 @@ import Codeware.UI.*
 public class GenerativeTextingSystem extends ScriptableService {
     private let initialized: Bool = false;
     private let callbackSystem: wref<CallbackSystem>;
-    private let panamSelected: Bool = false;
+    private let npcSelected: Bool = false;
     private let chatOpen: Bool = false;
     private let parent: wref<inkCanvas>;
     private let contactListSlot: wref<inkCanvas>;
@@ -23,6 +23,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     private let messengerSlotRoot: wref<inkCanvas>;
     private let chatScrollController: wref<inkScrollController>;
     private let typingIndicator: wref<inkFlex>;
+    private let lastActiveCharacter: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Character")
@@ -100,7 +101,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     // Initialize callbacks, widgets, and other necessary components
     private func InitializeSystem() {
         this.player = GetPlayer(GetGameInstance());
-        this.panamSelected = false;
+        this.npcSelected = false;
         this.chatOpen = false;
         this.isTyping = false;
         this.callbackSystem = GameInstance.GetCallbackSystem();
@@ -142,7 +143,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
 
         if Equals(s"\(event.GetKey())", "IK_T") {
-            if (!this.chatOpen && this.panamSelected) {
+            if (!this.chatOpen && this.npcSelected) {
                 this.HidePhoneUI();
                 this.ShowModChat();
             } else {
@@ -152,7 +153,7 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         if Equals(s"\(event.GetKey())", "IK_C") {
             if this.chatOpen {
-                this.panamSelected = false;
+                this.npcSelected = false;
                 this.chatOpen = false;
                 this.ShowPhoneUI();
                 this.HideModChat();
@@ -163,7 +164,7 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         if Equals(s"\(event.GetKey())", "IK_R") {
             if (this.chatOpen && !this.isTyping) {
-                this.ResetConversation();
+                this.ResetConversation(true);
             } else {
                 return;
             }
@@ -197,22 +198,28 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
-    private func ResetConversation() {
+    private func ResetConversation(playSound: Bool) {
         GetHttpRequestSystem().ResetConversation();
         this.messageParent.RemoveAllChildren();
-        this.PlaySound(n"ui_menu_map_pin_off");
+        if playSound {
+            this.PlaySound(n"ui_menu_map_pin_off");
+        }
     }
 
-    public func TogglePanamSelected(value: Bool) {
+    public func ToggleNpcSelected(value: Bool) {
         if !this.initialized {
             this.InitializeSystem();
         } 
 
-        this.panamSelected = value;
-        if this.panamSelected {
+        this.npcSelected = value;
+        if this.npcSelected {
             this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true)
                 .AddTarget(InputTarget.Key(EInputKey.IK_T))
                 .SetRunMode(CallbackRunMode.OncePerTarget);
+            if NotEquals(this.lastActiveCharacter, this.character) {
+                this.ResetConversation(false);
+                this.lastActiveCharacter = this.character;
+            }
         } else {
             this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
             this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
@@ -489,23 +496,23 @@ public class GenerativeTextingSystem extends ScriptableService {
 
     private func BuildConversation() {
         let vMessages = GetHttpRequestSystem().vMessages;
-        let panamResponses = GetHttpRequestSystem().panamResponses;
+        let npcResponses = GetHttpRequestSystem().npcResponses;
 
         let i = 0;
         while i < ArraySize(vMessages) {
             let vMessage = vMessages[i];
-            let panamResponse = panamResponses[i];
+            let npcResponse = npcResponses[i];
             this.BuildMessage(vMessage, true, false);
 
-            if StrLen(panamResponse) == 0 {
+            if StrLen(npcResponse) == 0 {
                 i += 1;
-            } else if StrLen(panamResponse) > 1000 {
-                let firstHalf = StrLeft(panamResponse, 1000);
-                let secondHalf = StrRight(panamResponse, (StrLen(panamResponse) - 1000));
+            } else if StrLen(npcResponse) > 1000 {
+                let firstHalf = StrLeft(npcResponse, 1000);
+                let secondHalf = StrRight(npcResponse, (StrLen(npcResponse) - 1000));
                 this.BuildMessage(firstHalf, false, false);
                 this.BuildMessage(secondHalf, false, false);
             } else {
-                this.BuildMessage(panamResponse, false, false);
+                this.BuildMessage(npcResponse, false, false);
             }
             i += 1;
         }
@@ -650,7 +657,7 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         let nameText = new inkText();
         nameText.SetName(n"contact_name");
-        nameText.SetText("Panam Palmer");
+        nameText.SetText(GetCharacterLocalizedName(this.character));
         nameText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
         nameText.SetFontStyle(n"Medium");
         nameText.SetFontSize(50);
@@ -817,7 +824,7 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         let isTyping = new inkText();
         isTyping.SetName(n"isTyping");
-        isTyping.SetText("Panam Palmer is typing");
+        isTyping.SetText(GetCharacterLocalizedName(this.character) + " is typing");
         isTyping.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
         isTyping.SetFontStyle(n"Medium");
         isTyping.SetFontSize(38);

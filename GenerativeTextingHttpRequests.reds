@@ -14,7 +14,7 @@ public class HttpRequestSystem extends ScriptableSystem {
   private let systemPrompt: String;
   private let systemPromptRomance: String;
   public let vMessages: array<String>;
-  public let panamResponses: array<String>;
+  public let npcResponses: array<String>;
 
   /// Lifecycle ///
 
@@ -205,22 +205,22 @@ public class HttpRequestSystem extends ScriptableSystem {
     if fromPlayer {
       ArrayPush(this.vMessages, message);
     } else {
-      ArrayPush(this.panamResponses, message);
+      ArrayPush(this.npcResponses, message);
     }
 
     // Limit history to the last 20 exchanges
     if ArraySize(this.vMessages) > 20 {
       ArrayErase(this.vMessages, 0);
     }
-    if ArraySize(this.panamResponses) > 20 {
-      ArrayErase(this.panamResponses, 0);
+    if ArraySize(this.npcResponses) > 20 {
+      ArrayErase(this.npcResponses, 0);
     }
   }
 
   // Reset the conversation history
   public func ResetConversation() {
     ArrayClear(this.vMessages);
-    ArrayClear(this.panamResponses);
+    ArrayClear(this.npcResponses);
   }
 
   // Get the current time
@@ -244,28 +244,25 @@ public class HttpRequestSystem extends ScriptableSystem {
     let i = 0;
     while i < ArraySize(this.vMessages) {
       promptText = promptText + "V: " + this.vMessages[i] + "\n";
-      promptText = promptText + "Panam Palmer: " + this.panamResponses[i] + "\n";
+      promptText = promptText + GetCharacterLocalizedName(GetTextingSystem().character) + ": " + this.npcResponses[i] + "\n";
       i += 1;
     }
 
     // Add the player’s current message to the prompt
-    promptText += "V: " + playerInput + " <|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nPanam Palmer: ";
+    promptText += "V: " + playerInput + " <|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n" + GetCharacterLocalizedName(GetTextingSystem().character) + ": ";
 
     return promptText;
   }
 
   private func GetSystemPrompt() -> String {
-    let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(this.GetCurrentTime())<|eot_id>\n\n";
+    let character = GetTextingSystem().character;
+    let romance = GetTextingSystem().romance;
 
-    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a friend who’s always there. Keep things casual but meaningful.\n " + guidelines;
+    let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(this.GetCurrentTime()), do not include a timestamp in your response though.<|eot_id>\n\n";
 
-    this.systemPromptRomance = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. \nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a girlfriend and life partner. Flirt with V often.\n" + guidelines;
+    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character, romance) + "\n " + guidelines;
 
-    if GetTextingSystem().romance {
-      return this.systemPromptRomance;
-    } else {
-      return this.systemPrompt;
-    }    
+    return this.systemPrompt;    
   }
 
    public func CreateTextGenerationRequest(playerInput: String) -> ref<TextGenerationRequestDTO> {

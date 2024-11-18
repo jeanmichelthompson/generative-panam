@@ -16,10 +16,10 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
     if contactData != null {
         let contactName = contactData.contactId;
 
-        // Check if the selected contact is Panam Palmer
-        if Equals(contactName, "panam") {
+        // Check if the active character is selected
+        if Equals(contactName, GetCharacterContactName(GetTextingSystem().character)) {
             if GetTextingSystem() != null {
-                GetTextingSystem().TogglePanamSelected(true);
+                GetTextingSystem().ToggleNpcSelected(true);
             }
 
             let contactListWidget = inkWidgetRef.Get(this.m_contactsList) as inkCompoundWidget;
@@ -31,11 +31,11 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                     let contactEntry = contactListWidget.GetWidgetByIndex(i) as inkCompoundWidget;
                     if IsDefined(contactEntry) {
 
-                        // Check if this entry corresponds to Panam's hints_holder
+                        // Check if this entry corresponds to npc's hints_holder
                         let contactLabel = FindWidgetWithName(contactEntry, n"contactLabel") as inkText;
-                        if IsDefined(contactLabel) && Equals(contactLabel.GetText(), "Panam Palmer") {
+                        if IsDefined(contactLabel) && Equals(contactLabel.GetText(), GetCharacterLocalizedName(GetTextingSystem().character)) {
 
-                            // Locate the hints_holder within Panam's entry
+                            // Locate the hints_holder within the npc's entry
                             let hintsHolderWidget = FindWidgetWithName(contactEntry, n"hints_holder") as inkHorizontalPanel;
                             if IsDefined(hintsHolderWidget) {
 
@@ -106,7 +106,7 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
             }
         } else {
             if GetTextingSystem() != null {
-                GetTextingSystem().TogglePanamSelected(false);
+                GetTextingSystem().ToggleNpcSelected(false);
             }
         }
     }
@@ -137,7 +137,7 @@ public final func Hide() -> Void {
     wrappedMethod();
 
     if IsDefined(GetTextingSystem()) {
-        GetTextingSystem().TogglePanamSelected(false);
+        GetTextingSystem().ToggleNpcSelected(false);
         GetTextingSystem().ToggleIsTyping(false);
     }
 }
@@ -148,7 +148,7 @@ public final func PushCustomSMSNotification(text: String) -> Void {
     let userData: ref<PhoneMessageNotificationViewData> = new PhoneMessageNotificationViewData();
     let action = new OpenPhoneMessageAction();
     action.m_phoneSystem = this.m_PhoneSystem;
-    userData.title = "Panam Palmer";
+    userData.title = GetCharacterLocalizedName(GetTextingSystem().character);
     userData.SMSText = text;
     userData.animation = n"notification_phone_MSG";
     userData.soundEvent = n"PhoneSmsPopup";
