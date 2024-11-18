@@ -25,6 +25,12 @@ public class GenerativeTextingSystem extends ScriptableService {
     private let typingIndicator: wref<inkFlex>;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Character")
+    @runtimeProperty("ModSettings.displayValues.Panam", "Panam Palmer")
+    @runtimeProperty("ModSettings.displayValues.Judy", "Judy Alvarez")
+    public let character: CharacterSetting = CharacterSetting.Panam;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Romance")
     @runtimeProperty("ModSettings.description", "Controls whether the responses are predisposed to romance.")
     public let romance: Bool = false;
@@ -168,9 +174,7 @@ public class GenerativeTextingSystem extends ScriptableService {
                 return;
             } 
 
-            let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
-
-            if HttpRequestSystem.GetIsGenerating() {
+            if GetHttpRequestSystem().GetIsGenerating() {
                 return;
             }
 
@@ -194,9 +198,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     private func ResetConversation() {
-        ConsoleLog("Resetting conversation...");
-        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
-        HttpRequestSystem.ResetConversation();
+        GetHttpRequestSystem().ResetConversation();
         this.messageParent.RemoveAllChildren();
         this.PlaySound(n"ui_menu_map_pin_off");
     }
@@ -222,9 +224,8 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
     
     public func UpdateInputUi() {
-        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
         
-        if HttpRequestSystem.GetIsGenerating() {
+        if GetHttpRequestSystem().GetIsGenerating() {
             let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
             this.typedMessageWrapper.RemoveChildByName(input.GetName());
             this.typedMessageText.SetVisible(true);
@@ -447,9 +448,8 @@ public class GenerativeTextingSystem extends ScriptableService {
             messageBorder.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(198u), Cast(255u)));
             messageText.SetTintColor(new Color(Cast(0u), Cast(255u), Cast(188u), Cast(255u)));
             if useAnim {
-                let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
-                HttpRequestSystem.TriggerPostRequest(text);
-                HttpRequestSystem.AppendToHistory(text, true);
+                GetHttpRequestSystem().TriggerPostRequest(text);
+                GetHttpRequestSystem().AppendToHistory(text, true);
             }
         } else {
             messageContainer.SetHAlign(inkEHorizontalAlign.Left);
@@ -488,9 +488,8 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     private func BuildConversation() {
-        let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
-        let vMessages = HttpRequestSystem.vMessages;
-        let panamResponses = HttpRequestSystem.panamResponses;
+        let vMessages = GetHttpRequestSystem().vMessages;
+        let panamResponses = GetHttpRequestSystem().panamResponses;
 
         let i = 0;
         while i < ArraySize(vMessages) {
@@ -515,7 +514,6 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     private func BuildChatUi() {
-        ConsoleLog("Building chat UI...");
 
         let modMessengerSlotRoot = new inkCanvas();
         modMessengerSlotRoot.SetName(n"Root");

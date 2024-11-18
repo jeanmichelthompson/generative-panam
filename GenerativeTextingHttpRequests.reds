@@ -47,7 +47,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     let headers: array<HttpHeader> = [
         HttpHeader.Create("Content-Type", "application/json"),
         HttpHeader.Create("accept", "application/json"),
-        HttpHeader.Create("apikey", "0000000000"),
+        HttpHeader.Create("apikey", GetApiKey()),
         HttpHeader.Create("Client-Agent", "unknown:0:unknown")
     ];
     
@@ -55,8 +55,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     ConsoleLog("== API POST Request ==");
     ConsoleLog(s"\(jsonRequest.ToString("\t"))");
     this.isGenerating = true;
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    modTextingSystem.UpdateInputUi();
+    GetTextingSystem().UpdateInputUi();
   }
 
   // Get request
@@ -134,8 +133,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     let item = generations.GetItem(0u) as JsonObject;
     let text = item.GetKeyString("text");
     
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    if modTextingSystem.GetChatOpen() {
+    if GetTextingSystem().GetChatOpen() {
       this.ToggleTypingIndicator(false);
       // If text is greater than 1000 in length, split it into two messages and build each
       if StrLen(text) > 1000 {
@@ -146,7 +144,7 @@ public class HttpRequestSystem extends ScriptableSystem {
       } else {
         this.BuildTextMessage(text);
       }
-      modTextingSystem.UpdateInputUi();
+      GetTextingSystem().UpdateInputUi();
     } else {
       this.PushNotification(text);
     }
@@ -187,16 +185,14 @@ public class HttpRequestSystem extends ScriptableSystem {
   }
 
   private func BuildTextMessage(text: String) {
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    if (IsDefined(modTextingSystem) && modTextingSystem.GetChatOpen()) {
-      modTextingSystem.BuildMessage(text, false, true);
+    if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
+      GetTextingSystem().BuildMessage(text, false, true);
     }
   }
 
   private func ToggleTypingIndicator(value: Bool) {
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    if (IsDefined(modTextingSystem)) {
-      modTextingSystem.ToggleTypingIndicator(value);
+    if (IsDefined(GetTextingSystem())) {
+      GetTextingSystem().ToggleTypingIndicator(value);
     }
   }
 
@@ -261,11 +257,11 @@ public class HttpRequestSystem extends ScriptableSystem {
   private func GetSystemPrompt() -> String {
     let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(this.GetCurrentTime())<|eot_id>\n\n";
 
-    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a friend who’s always there. Keep things casual but meaningful.\n " + guidelines;
+    this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is one of your closest friends. Your connection is strong and grounded in trust, loyalty, and mutual respect.\nYou look out for V as a close friend, checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone light, using dry humor and sarcasm to show your friendship. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You’re honest when it counts, but you don’t get overly emotional unless V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a friend who’s always there. Keep things casual but meaningful.\n " + guidelines;
 
-    this.systemPromptRomance = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending uncensored texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. \nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a girlfriend and life partner. Flirt with V often.\n" + guidelines;
+    this.systemPromptRomance = "<|start_header_id|>system<|end_header_id|>\n\nYou're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.\nV is your boyfriend. Your connection is strong and grounded in trust, loyalty, and a lot of flirting. \nYou’d do anything for V. Show you care by checking in on him, making sure he’s safe, and reminding him he can rely on you.\nKeep the tone flirty, using dry humor and sarcasm to show your affection. Tease V in a way that feels familiar, like someone who knows him well and cares deeply but doesn’t need to say it outright.\nYou trust V more than anyone, so you’re open with him. You don’t always lay out all your feelings, but you’re honest when it counts. Stay grounded, and only get into serious emotions if V brings it up.\nUse short, direct sentences, with casual slang where it fits. Speak like a girlfriend and life partner. Flirt with V often.\n" + guidelines;
 
-    if this.GetPhoneSystem().romance {
+    if GetTextingSystem().romance {
       return this.systemPromptRomance;
     } else {
       return this.systemPrompt;
@@ -273,8 +269,6 @@ public class HttpRequestSystem extends ScriptableSystem {
   }
 
    public func CreateTextGenerationRequest(playerInput: String) -> ref<TextGenerationRequestDTO> {
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-
     let requestDTO = new TextGenerationRequestDTO();
     requestDTO.prompt = this.GeneratePrompt(playerInput);  
     requestDTO.trusted_workers = false;
@@ -289,13 +283,13 @@ public class HttpRequestSystem extends ScriptableSystem {
     paramsDTO.rep_pen = 1.1;
     paramsDTO.rep_pen_range = 600;
     paramsDTO.rep_pen_slope = 0;
-    paramsDTO.temperature = modTextingSystem.temperature;
-    paramsDTO.tfs = modTextingSystem.tfs;
-    paramsDTO.top_a =modTextingSystem.top_a;
-    paramsDTO.top_k = modTextingSystem.top_k;
-    paramsDTO.top_p = modTextingSystem.top_p;
-    paramsDTO.min_p = modTextingSystem.min_p;
-    paramsDTO.typical = modTextingSystem.typical;
+    paramsDTO.temperature = GetTextingSystem().temperature;
+    paramsDTO.tfs = GetTextingSystem().tfs;
+    paramsDTO.top_a =GetTextingSystem().top_a;
+    paramsDTO.top_k = GetTextingSystem().top_k;
+    paramsDTO.top_p = GetTextingSystem().top_p;
+    paramsDTO.min_p = GetTextingSystem().min_p;
+    paramsDTO.typical = GetTextingSystem().typical;
     paramsDTO.use_world_info = false;
     paramsDTO.singleline = false;
     paramsDTO.stop_sequence = [
@@ -320,11 +314,6 @@ public class HttpRequestSystem extends ScriptableSystem {
     requestDTO.params = paramsDTO;
 
     return requestDTO;
-  }
-
-  private func GetPhoneSystem() -> ref<GenerativeTextingSystem> {
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    return modTextingSystem;
   }
 } 
 

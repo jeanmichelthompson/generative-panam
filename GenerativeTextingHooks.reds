@@ -2,9 +2,8 @@
 protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpawn>) -> Bool { 
     wrappedMethod(evt);
     
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-    if IsDefined(modTextingSystem) {
-        modTextingSystem.InitializeSystem();
+    if IsDefined(GetTextingSystem()) {
+        GetTextingSystem().InitializeSystem();
     } else {
         ConsoleLog("Texting system not defined.");
     }
@@ -14,15 +13,13 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
 private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
     wrappedMethod(contactData);
 
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
-
     if contactData != null {
         let contactName = contactData.contactId;
 
         // Check if the selected contact is Panam Palmer
         if Equals(contactName, "panam") {
-            if modTextingSystem != null {
-                modTextingSystem.TogglePanamSelected(true);
+            if GetTextingSystem() != null {
+                GetTextingSystem().TogglePanamSelected(true);
             }
 
             let contactListWidget = inkWidgetRef.Get(this.m_contactsList) as inkCompoundWidget;
@@ -108,8 +105,8 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                 ConsoleLog("contactListWidget not found.");
             }
         } else {
-            if modTextingSystem != null {
-                modTextingSystem.TogglePanamSelected(false);
+            if GetTextingSystem() != null {
+                GetTextingSystem().TogglePanamSelected(false);
             }
         }
     }
@@ -138,11 +135,10 @@ private final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> w
 @wrapMethod(PhoneDialerLogicController)
 public final func Hide() -> Void {
     wrappedMethod();
-    let modTextingSystem = GameInstance.GetScriptableServiceContainer().GetService(n"GenerativeTextingSystem") as GenerativeTextingSystem;
 
-    if IsDefined(modTextingSystem) {
-        modTextingSystem.TogglePanamSelected(false);
-        modTextingSystem.ToggleIsTyping(false);
+    if IsDefined(GetTextingSystem()) {
+        GetTextingSystem().TogglePanamSelected(false);
+        GetTextingSystem().ToggleIsTyping(false);
     }
 }
 
