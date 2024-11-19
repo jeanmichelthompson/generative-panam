@@ -92,6 +92,11 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.max", "1.0")
     public let typical: Float = 1.0;
 
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Enable Logs")
+    @runtimeProperty("ModSettings.description", "Allows you to view logs in the CET console.")
+    public let logging: Bool = false;
+
     private cb func OnReload() {
         ConsoleLog("Reloading Generative Texting System...");
         this.initialized = false;
@@ -114,7 +119,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.parent = hudMiddleWidget.GetWidget(0) as inkCanvas;
         this.contactListSlot = this.parent.GetWidget(9) as inkCanvas;
         this.defaultChatUi = this.parent.GetWidget(11) as inkCanvas;
-
+        
         ModSettings.RegisterListenerToClass(this);
 
         this.InitializeDefaultPhoneController(false);
@@ -271,7 +276,10 @@ public class GenerativeTextingSystem extends ScriptableService {
     private func HidePhoneUI() {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.DisableContactsInput();
-            this.contactListSlot.SetVisible(false);
+            let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
+            let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
+            let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
+            contactCentralContainer.SetVisible(false);
             this.parent.ReorderChild(this.chatContainer, 12);
             this.parent.ReorderChild(this.defaultChatUi, 14);
         } else {
@@ -283,7 +291,10 @@ public class GenerativeTextingSystem extends ScriptableService {
     private func ShowPhoneUI() {
         if (IsDefined(this.defaultPhoneController) && IsDefined(this.contactListSlot)) {            
             this.defaultPhoneController.EnableContactsInput();
-            this.contactListSlot.SetVisible(true);
+            let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
+            let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
+            let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
+            contactCentralContainer.SetVisible(true);
             this.parent.ReorderChild(this.defaultChatUi, 12);
             this.parent.ReorderChild(this.chatContainer, 14);
         } else {

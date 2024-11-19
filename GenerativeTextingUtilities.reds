@@ -81,5 +81,7 @@ public func GetCurrentTime() -> String {
 }
 
 public static func ConsoleLog(const text: String) {
-    FTLog(s"[GenerativeTexting]: \(text)");
+    if GetTextingSystem().logging {
+        FTLog(s"[GenerativeTexting]: \(text)");
+    }
 }
