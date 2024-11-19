@@ -1,3 +1,4 @@
+// Initialize the texting system when the player spawns in
 @wrapMethod(PlayerPuppet)
 protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpawn>) -> Bool { 
     wrappedMethod(evt);
@@ -9,6 +10,7 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
     }
 }
 
+// Update the input hints based on the selected character
 @wrapMethod(PhoneDialerLogicController)
 private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
     wrappedMethod(contactData);
@@ -132,6 +134,7 @@ private final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> w
     return null;
 }
 
+// Toggle flags when the phone is put away
 @wrapMethod(PhoneDialerLogicController)
 public final func Hide() -> Void {
     wrappedMethod();
@@ -142,6 +145,7 @@ public final func Hide() -> Void {
     }
 }
 
+// Push a custom SMS notification based on the selected character and LLM response
 @addMethod(NewHudPhoneGameController)
 public final func PushCustomSMSNotification(text: String) -> Void {
     let notificationData: gameuiGenericNotificationData;
