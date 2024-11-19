@@ -1,7 +1,9 @@
+// Replace this with your own API key from https://stablehorde.net/register for faster response times
 public func GetApiKey() -> String {
     return "0000000000";
 }
 
+// Get the bio of a character
 public func GetCharacterBio(character: CharacterSetting) -> String {
     switch character {
         case CharacterSetting.Panam:
@@ -12,6 +14,7 @@ public func GetCharacterBio(character: CharacterSetting) -> String {
     }
 }
 
+// Get the character's full display name
 public func GetCharacterLocalizedName(character: CharacterSetting) -> String{
     switch character {
         case CharacterSetting.Panam:
@@ -22,6 +25,7 @@ public func GetCharacterLocalizedName(character: CharacterSetting) -> String{
     }
 }
 
+// Get the character's name for the contact list widget
 public func GetCharacterContactName(character: CharacterSetting) -> String {
     switch character {
         case CharacterSetting.Panam:
@@ -32,6 +36,7 @@ public func GetCharacterContactName(character: CharacterSetting) -> String {
     }
 }
 
+// Get the character's relationship to V
 public func GetCharacterRelationship(character: CharacterSetting, romance: Bool) -> String {
     switch character {
         case CharacterSetting.Panam:
@@ -62,6 +67,18 @@ public func GetHttpRequestSystem() -> ref<HttpRequestSystem> {
     return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
 }
 
+// Get the current in-game time
+public func GetCurrentTime() -> String {
+    let time = GameInstance.GetGameTime(GetGameInstance());
+    let hours = time.Hours();
+    let minutes = time.Minutes();
+    if hours > 12 {
+        hours -= 12;
+        return s"\(hours):\(minutes)pm";
+    } else {
+        return s"\(hours):\(minutes)am";
+    }
+}
 
 public static func ConsoleLog(const text: String) {
     FTLog(s"[GenerativeTexting]: \(text)");

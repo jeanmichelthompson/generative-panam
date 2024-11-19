@@ -135,7 +135,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     
     if GetTextingSystem().GetChatOpen() {
       this.ToggleTypingIndicator(false);
-      // If text is greater than 1000 in length, split it into two messages and build each
+      // If text is greater than 1000 in length, split it into two messages
       if StrLen(text) > 1000 {
         let firstHalf = StrLeft(text, 1000);
         let secondHalf = StrRight(text, (StrLen(text) - 1000));
@@ -152,6 +152,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     this.AppendToHistory(text, false);
   }
 
+  // Push a notification to the player's HUD
   private func PushNotification(text: String) {
     if !IsDefined(this.phoneController) {
       let inkSystem = GameInstance.GetInkSystem();
@@ -168,6 +169,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     this.phoneController.PushCustomSMSNotification(text);
   }
 
+  // Handle failed GET requests
   private func FailedToGet() {
       let text = "[ERROR CODE: 5001 - YOUR MESSAGE COULD NOT BE SENT. PLEASE TRY AGAIN LATER.]";
       this.isGenerating = false;
@@ -176,6 +178,7 @@ public class HttpRequestSystem extends ScriptableSystem {
       this.AppendToHistory(text, false);
   }
 
+  // Delay the GET request
   private func DelayedGet() {
     let delaySystem = GameInstance.GetDelaySystem(GetGameInstance());
     let delay = RandRangeF(4.0, 6.0);
@@ -184,6 +187,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     delaySystem.DelayCallback(HttpDelayCallback.Create(), delay, isAffectedByTimeDilation);
   }
 
+  // Build the text message by passing in the text author and whether to play an anim
   private func BuildTextMessage(text: String) {
     if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
       GetTextingSystem().BuildMessage(text, false, true);
@@ -200,7 +204,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     return this.isGenerating;
   }
 
-  // Add new messages to history arrays and maintain a rolling window
+  // Add new messages to history arrays
   public func AppendToHistory(message: String, fromPlayer: Bool) {
     if fromPlayer {
       ArrayPush(this.vMessages, message);
@@ -223,19 +227,6 @@ public class HttpRequestSystem extends ScriptableSystem {
     ArrayClear(this.npcResponses);
   }
 
-  // Get the current time
-  public func GetCurrentTime() -> String {
-    let time = GameInstance.GetGameTime(GetGameInstance());
-    let hours = time.Hours();
-    let minutes = time.Minutes();
-    if hours > 12 {
-      hours -= 12;
-      return s"\(hours):\(minutes)pm";
-    } else {
-      return s"\(hours):\(minutes)am";
-    }
-  }
-
   // Generate the prompt using the arrays
   public func GeneratePrompt(playerInput: String) -> String {
     let promptText = this.GetSystemPrompt() + "\n\n";
@@ -254,18 +245,20 @@ public class HttpRequestSystem extends ScriptableSystem {
     return promptText;
   }
 
+  // Build the system prompt based on the selected character and relationship
   private func GetSystemPrompt() -> String {
     let character = GetTextingSystem().character;
     let romance = GetTextingSystem().romance;
 
-    let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(this.GetCurrentTime()), do not include a timestamp in your response though.<|eot_id>\n\n";
+    let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(GetCurrentTime()), do not include a timestamp in your response though.<|eot_id>\n\n";
 
     this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character, romance) + "\n " + guidelines;
 
     return this.systemPrompt;    
   }
 
-   public func CreateTextGenerationRequest(playerInput: String) -> ref<TextGenerationRequestDTO> {
+  // Build the post request
+  public func CreateTextGenerationRequest(playerInput: String) -> ref<TextGenerationRequestDTO> {
     let requestDTO = new TextGenerationRequestDTO();
     requestDTO.prompt = this.GeneratePrompt(playerInput);  
     requestDTO.trusted_workers = false;

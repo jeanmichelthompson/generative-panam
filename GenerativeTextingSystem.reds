@@ -188,6 +188,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
+    // Handle scrolling messages
     private cb func OnAxisInput(event: ref<AxisInputEvent>) {
         if Equals(s"\(event.GetKey())", "IK_MouseZ") {
             if Equals(event.GetValue(), 1.0) {
@@ -198,6 +199,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
+    // Reset the conversation history and remove all messages
     private func ResetConversation(playSound: Bool) {
         GetHttpRequestSystem().ResetConversation();
         this.messageParent.RemoveAllChildren();
@@ -206,6 +208,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
+    // Handle selecting an NPC
     public func ToggleNpcSelected(value: Bool) {
         if !this.initialized {
             this.InitializeSystem();
@@ -230,6 +233,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.isTyping = value;
     }
     
+    // Update the input UI based on the current state
     public func UpdateInputUi() {
         
         if GetHttpRequestSystem().GetIsGenerating() {
@@ -246,6 +250,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
+    // Show the mod chat UI
     private func ShowModChat() {
         this.chatOpen = true;
         this.BuildChatUi();
@@ -257,11 +262,12 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
+    // Hide the mod chat UI
     private func HideModChat() {
         this.chatContainer.RemoveAllChildren();
     }
 
-    // Function to hide the default phone UI
+    // Hide the default phone UI
     private func HidePhoneUI() {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.DisableContactsInput();
@@ -273,7 +279,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
-    // Function to show the default phone UI
+    // Show the default phone UI
     private func ShowPhoneUI() {
         if (IsDefined(this.defaultPhoneController) && IsDefined(this.contactListSlot)) {            
             this.defaultPhoneController.EnableContactsInput();
@@ -286,7 +292,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
-
+    // Build the widget containing the chat message list
     private func SetupChatContainer() {
         if this.parent.GetNumChildren() > 14 {
             this.parent.RemoveChildByName(n"mod_messenger_slot");
@@ -301,6 +307,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.chatContainer = modMessengerSlot;
     }
 
+    // Get a reference to the phone controller
     private func InitializeDefaultPhoneController(hidePhone: Bool) {
         let inkSystem = GameInstance.GetInkSystem();
 
@@ -319,6 +326,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         GameObject.PlaySoundEvent(this.player, sound);
     }
 
+    // Build the input widget for the chat
     private func BuildInput() {
         let inkSystem = GameInstance.GetInkSystem();
         let input = HubTextInput.Create();
@@ -337,6 +345,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         inkSystem.SetFocus(input.GetRootWidget());
     }
 
+    // Get the text from the input widget
     private func GetInputText() -> String {
         let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
         let inputChild1 = input.GetWidget(1) as inkCompoundWidget;
@@ -344,10 +353,6 @@ public class GenerativeTextingSystem extends ScriptableService {
         let inputChild3 = inputChild2.GetWidget(1) as inkText;
         let message = inputChild3.GetText();
         return message;
-    }
-
-    public func GetInitialized() -> Bool {
-        return this.initialized;
     }
 
     public func GetChatOpen() -> Bool {
@@ -365,7 +370,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
     }
 
-    // Function to build a message for the player or NPC
+    // Build a message for the player or NPC
     private func BuildMessage(text: String, fromPlayer: Bool, useAnim: Bool) {
         if !IsDefined(this.messageParent) {
             return;
@@ -494,6 +499,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.chatScrollController.SetScrollPosition(1.0);
     }
 
+    // Retrieve and build the conversation based on the current history
     private func BuildConversation() {
         let vMessages = GetHttpRequestSystem().vMessages;
         let npcResponses = GetHttpRequestSystem().npcResponses;
@@ -520,6 +526,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.UpdateInputUi();
     }
 
+    // Build all widgets for the chat UI
     private func BuildChatUi() {
 
         let modMessengerSlotRoot = new inkCanvas();
