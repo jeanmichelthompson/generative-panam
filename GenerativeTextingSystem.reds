@@ -265,6 +265,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     // Show the mod chat UI
     private func ShowModChat() {
         this.chatOpen = true;
+        GetTextingSystem().ToggleUnread(false);
         this.BuildChatUi();
         this.PlaySound(n"ui_menu_map_pin_created");
         this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true);

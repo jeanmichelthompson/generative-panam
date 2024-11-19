@@ -16,7 +16,6 @@ protected cb func OnAllElementsSpawned() -> Bool {
 
     if GetTextingSystem().GetUnread() {
         GetTextingSystem().HidePhoneUI();
-        GetTextingSystem().ToggleUnread(false);
     }
 }
 
