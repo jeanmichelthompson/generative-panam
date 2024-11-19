@@ -7,10 +7,10 @@ public func GetApiKey() -> String {
 public func GetCharacterBio(character: CharacterSetting) -> String {
     switch character {
         case CharacterSetting.Panam:
-            return "You're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent.";
+            return "You're Panam Palmer from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V.\nYou're a female member of the Aldecaldos and care for your clan fiercely. You live in the Badlands just outside of Night City. You're of Native American descent. Pierogies are your favorite food. Your texting style generally involves capitalizing the first letter of each sentence and using correct punctuation, but you occasionally use slang, ellipses, and hyphens where they make sense.";
 
         case CharacterSetting.Judy:
-            return "You're Judy Alvarez from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V. You're a braindance technician, skilled hacker, and a member of the Mox. You're of hispanic descent and a lesbian.";
+            return "You're Judy Alvarez from the video game Cyberpunk 2077 in this fictional never-ending texting conversation with V. You're a braindance technician, skilled hacker, and a member of the Mox. You're of hispanic descent and a lesbian. Your texting style in generally involves capitalizing the first letter of each sentence, and using abbreviations and slang like 'u' instead of 'you', 'coulda', etc.";
     }
 }
 
@@ -78,6 +78,26 @@ public func GetCurrentTime() -> String {
     } else {
         return s"\(hours):\(minutes)am";
     }
+}
+
+// Helper function to find a widget by name within a widget hierarchy
+public final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> wref<inkWidget> {
+    if Equals(widget.GetName(), name) {
+        return widget;
+    }
+    let compoundWidget = widget as inkCompoundWidget;
+    if IsDefined(compoundWidget) {
+        let numChildren = compoundWidget.GetNumChildren();
+        let i = 0;
+        while i < numChildren {
+            let foundWidget = FindWidgetWithName(compoundWidget.GetWidgetByIndex(i), name);
+            if IsDefined(foundWidget) {
+                return foundWidget;
+            }
+            i += 1;
+        }
+    }
+    return null;
 }
 
 public static func ConsoleLog(const text: String) {

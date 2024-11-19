@@ -10,6 +10,16 @@ protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpaw
     }
 }
 
+@wrapMethod(PhoneDialerLogicController)
+protected cb func OnAllElementsSpawned() -> Bool {
+    wrappedMethod();
+
+    if GetTextingSystem().GetUnread() {
+        GetTextingSystem().HidePhoneUI();
+        GetTextingSystem().ToggleUnread(false);
+    }
+}
+
 // Update the input hints based on the selected character
 @wrapMethod(PhoneDialerLogicController)
 private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
@@ -112,26 +122,6 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
             }
         }
     }
-}
-
-// Helper function to find a widget by name within a widget hierarchy
-private final func FindWidgetWithName(widget: wref<inkWidget>, name: CName) -> wref<inkWidget> {
-    if Equals(widget.GetName(), name) {
-        return widget;
-    }
-    let compoundWidget = widget as inkCompoundWidget;
-    if IsDefined(compoundWidget) {
-        let numChildren = compoundWidget.GetNumChildren();
-        let i = 0;
-        while i < numChildren {
-            let foundWidget = FindWidgetWithName(compoundWidget.GetWidgetByIndex(i), name);
-            if IsDefined(foundWidget) {
-                return foundWidget;
-            }
-            i += 1;
-        }
-    }
-    return null;
 }
 
 // Toggle flags when the phone is put away

@@ -24,6 +24,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     private let chatScrollController: wref<inkScrollController>;
     private let typingIndicator: wref<inkFlex>;
     private let lastActiveCharacter: CharacterSetting = CharacterSetting.Panam;
+    private let unread: Bool = false;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Character")
@@ -112,22 +113,22 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.callbackSystem = GameInstance.GetCallbackSystem();
         this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
         this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
+        ModSettings.RegisterListenerToClass(this);
+        this.GetWidgetReferences();
+        this.InitializeDefaultPhoneController(false);
+        this.SetupChatContainer();
+        this.initialized = true;
+        ConsoleLog("Generative Texting System initialized");
+    }
+
+    private func GetWidgetReferences() {
         let inkSystem = GameInstance.GetInkSystem();
         let virtualWindow = inkSystem.GetLayer(n"inkHUDLayer").GetVirtualWindow();
         let virtualWindowRoot = virtualWindow.GetWidget(0) as inkCanvas;
         let hudMiddleWidget = virtualWindowRoot.GetWidget(53) as inkCanvas;
         this.parent = hudMiddleWidget.GetWidget(0) as inkCanvas;
-        this.contactListSlot = this.parent.GetWidget(9) as inkCanvas;
-        this.defaultChatUi = this.parent.GetWidget(11) as inkCanvas;
-        
-        ModSettings.RegisterListenerToClass(this);
-
-        this.InitializeDefaultPhoneController(false);
-        this.SetupChatContainer();
-
-        this.initialized = true;
-
-        ConsoleLog("Generative Texting System initialized");
+        this.contactListSlot = FindWidgetWithName(this.parent, n"contact_list_slot") as inkCanvas;
+        this.defaultChatUi = FindWidgetWithName(this.parent, n"sms_messenger_slot") as inkCanvas;
     }
 
     // Handle key input events
@@ -150,7 +151,6 @@ public class GenerativeTextingSystem extends ScriptableService {
         if Equals(s"\(event.GetKey())", "IK_T") {
             if (!this.chatOpen && this.npcSelected) {
                 this.HidePhoneUI();
-                this.ShowModChat();
             } else {
                 return;
             }
@@ -161,7 +161,6 @@ public class GenerativeTextingSystem extends ScriptableService {
                 this.npcSelected = false;
                 this.chatOpen = false;
                 this.ShowPhoneUI();
-                this.HideModChat();
             } else {
                 return;
             }
@@ -237,6 +236,14 @@ public class GenerativeTextingSystem extends ScriptableService {
     public func ToggleIsTyping(value: Bool) {
         this.isTyping = value;
     }
+
+    public func ToggleUnread(value: Bool) {
+        this.unread = value;
+    }
+
+    public func GetUnread() -> Bool {
+        return this.unread;
+    }
     
     // Update the input UI based on the current state
     public func UpdateInputUi() {
@@ -273,15 +280,13 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     // Hide the default phone UI
-    private func HidePhoneUI() {
+    public func HidePhoneUI() {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.DisableContactsInput();
-            let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
-            let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
-            let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
-            contactCentralContainer.SetVisible(false);
+            this.ToggleContactList(false);
             this.parent.ReorderChild(this.chatContainer, 12);
             this.parent.ReorderChild(this.defaultChatUi, 14);
+            this.ShowModChat();
         } else {
             this.InitializeDefaultPhoneController(true);
         }
@@ -291,15 +296,24 @@ public class GenerativeTextingSystem extends ScriptableService {
     private func ShowPhoneUI() {
         if (IsDefined(this.defaultPhoneController) && IsDefined(this.contactListSlot)) {            
             this.defaultPhoneController.EnableContactsInput();
-            let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
-            let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
-            let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
-            contactCentralContainer.SetVisible(true);
+            this.ToggleContactList(true);
             this.parent.ReorderChild(this.defaultChatUi, 12);
             this.parent.ReorderChild(this.chatContainer, 14);
         } else {
             this.InitializeDefaultPhoneController(false);
             this.ShowPhoneUI();
+        }
+        this.HideModChat();
+    }
+
+    private func ToggleContactList(value: Bool) {
+        let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
+        let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
+        let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
+        if value {
+            contactCentralContainer.SetVisible(true);
+        } else {
+            contactCentralContainer.SetVisible(false);
         }
     }
 

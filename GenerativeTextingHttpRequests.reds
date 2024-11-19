@@ -167,6 +167,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     }
 
     this.phoneController.PushCustomSMSNotification(text);
+    GetTextingSystem().ToggleUnread(true);
   }
 
   // Handle failed GET requests
@@ -250,7 +251,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     let character = GetTextingSystem().character;
     let romance = GetTextingSystem().romance;
 
-    let guidelines = s"Use elipses(...), line breaks, and lower case letters to make it feel natural.\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(GetCurrentTime()), do not include a timestamp in your response though.<|eot_id>\n\n";
+    let guidelines = s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places unless V brings them up first. Let V direct the conversation, avoid changing the subject. Reply with only the text of the next message in the conversation and nothing else. The current time is \(GetCurrentTime()), do not include a timestamp in your response though.<|eot_id>\n\n";
 
     this.systemPrompt = "<|start_header_id|>system<|end_header_id|>\n\n" + GetCharacterBio(character) + "\n" + GetCharacterRelationship(character, romance) + "\n " + guidelines;
 
