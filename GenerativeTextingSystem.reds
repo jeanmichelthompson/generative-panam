@@ -28,15 +28,29 @@ public class GenerativeTextingSystem extends ScriptableService {
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Player Gender")
+    @runtimeProperty("ModSettings.description", "Controls the gender you will be referred to as.")
     @runtimeProperty("ModSettings.displayValues.Male", "Male")
     @runtimeProperty("ModSettings.displayValues.Female", "Female")
     public let gender: PlayerGender = PlayerGender.Male;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Character")
+    @runtimeProperty("ModSettings.description", "Controls the character you can chat with.")
     @runtimeProperty("ModSettings.displayValues.Panam", "Panam Palmer")
     @runtimeProperty("ModSettings.displayValues.Judy", "Judy Alvarez")
+    @runtimeProperty("ModSettings.displayValues.River", "River Ward")
     public let character: CharacterSetting = CharacterSetting.Panam;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Language (Experimental)")
+    @runtimeProperty("ModSettings.description", "Controls the language of the generated text. Does not work with 100% consistency but could be worse.")
+    @runtimeProperty("ModSettings.displayValues.English", "English")
+    @runtimeProperty("ModSettings.displayValues.Spanish", "Spanish")
+    @runtimeProperty("ModSettings.displayValues.French", "French")
+    @runtimeProperty("ModSettings.displayValues.German", "German")
+    @runtimeProperty("ModSettings.displayValues.Italian", "Italian")
+    @runtimeProperty("ModSettings.displayValues.Portuguese", "Portuguese")
+    public let language: PlayerLanguage = PlayerLanguage.English;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Romance")
@@ -147,6 +161,10 @@ public class GenerativeTextingSystem extends ScriptableService {
             if Equals(s"\(event.GetKey())", "IK_Enter") {
                 this.isTyping = false;
                 let message = this.GetInputText();
+                if Equals(StrLen(message), 0) {
+                    this.UpdateInputUi();
+                    return;
+                }
                 this.BuildMessage(message, true, true);
             } else {
                 this.PlaySound(n"ui_menu_mouse_click");
@@ -227,8 +245,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.npcSelected = value;
         if this.npcSelected {
             this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true)
-                .AddTarget(InputTarget.Key(EInputKey.IK_T))
-                .SetRunMode(CallbackRunMode.OncePerTarget);
+                .AddTarget(InputTarget.Key(EInputKey.IK_T));
             if NotEquals(this.lastActiveCharacter, this.character) {
                 this.ResetConversation(false);
                 this.lastActiveCharacter = this.character;
@@ -253,15 +270,21 @@ public class GenerativeTextingSystem extends ScriptableService {
     
     // Update the input UI based on the current state
     public func UpdateInputUi() {
-        
+        let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
         if GetHttpRequestSystem().GetIsGenerating() {
-            let input = this.typedMessageWrapper.GetWidget(2) as inkCompoundWidget;
             this.typedMessageWrapper.RemoveChildByName(input.GetName());
             this.typedMessageText.SetVisible(true);
             this.typedMessageText.SetText("Send a message.");
             this.typedMessageText.SetOpacity(0.2);
             this.chatInputHint.SetTexturePart(n"mouse_left");
             this.chatInputHint.SetOpacity(0.2);
+        } else if !this.isTyping {
+            this.typedMessageWrapper.RemoveChildByName(input.GetName());
+            this.typedMessageText.SetVisible(true);
+            this.typedMessageText.SetText("Send a message.");
+            this.typedMessageText.SetOpacity(1);
+            this.chatInputHint.SetTexturePart(n"mouse_left");
+            this.chatInputHint.SetOpacity(1);
         } else {
             this.typedMessageText.SetOpacity(1);
             this.chatInputHint.SetOpacity(1);
