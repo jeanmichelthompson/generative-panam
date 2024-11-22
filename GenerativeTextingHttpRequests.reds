@@ -40,6 +40,7 @@ public class HttpRequestSystem extends ScriptableSystem {
   // Post request
   public func TriggerPostRequest(playerMessage: String) {
     this.playerInput = playerMessage;
+    let tokens = this.EstimateTokens(playerMessage);
     let requestDTO = this.CreateTextGenerationRequest(playerMessage);
     let jsonRequest = ToJson(requestDTO);
     
@@ -54,6 +55,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     AsyncHttpClient.Post(callback, "https://stablehorde.net/api/v2/generate/text/async", jsonRequest.ToString(), headers);
     ConsoleLog("== API POST Request ==");
     ConsoleLog(s"\(jsonRequest.ToString("\t"))");
+    ConsoleLog(s"== Tokens: \(tokens) ==");
     this.isGenerating = true;
     GetTextingSystem().UpdateInputUi();
   }
@@ -151,6 +153,14 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     this.AppendToHistory(text, false);
   }
+
+  // Estimate tokens based on number of words in prompt where 75 words roughly = 100 tokens
+  private func EstimateTokens(prompt: String) -> Int32 {
+    let words = StrSplit(prompt, " ");
+    let tokens = (ArraySize(words) * 133)/100;
+    return tokens;
+  }
+
 
   // Push a notification to the player's HUD
   private func PushNotification(text: String) {
