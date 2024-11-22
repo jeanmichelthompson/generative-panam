@@ -40,8 +40,8 @@ public class HttpRequestSystem extends ScriptableSystem {
   // Post request
   public func TriggerPostRequest(playerMessage: String) {
     this.playerInput = playerMessage;
-    let tokens = this.EstimateTokens(playerMessage);
     let requestDTO = this.CreateTextGenerationRequest(playerMessage);
+    let tokens = this.EstimateTokens(requestDTO.prompt);
     let jsonRequest = ToJson(requestDTO);
     
     let callback = HttpCallback.Create(this, n"OnPostResponse");
@@ -236,6 +236,16 @@ public class HttpRequestSystem extends ScriptableSystem {
   public func ResetConversation() {
     ArrayClear(this.vMessages);
     ArrayClear(this.npcResponses);
+  }
+
+  // Undo the last message from the NPC and V
+  public func UndoMessage() {
+    if ArraySize(this.vMessages) > 0 {
+      ArrayPop(this.vMessages);
+    }
+    if ArraySize(this.npcResponses) > 0 {
+      ArrayPop(this.npcResponses);
+    }
   }
 
   // Generate the prompt using the arrays

@@ -39,6 +39,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayValues.Panam", "Panam Palmer")
     @runtimeProperty("ModSettings.displayValues.Judy", "Judy Alvarez")
     @runtimeProperty("ModSettings.displayValues.River", "River Ward")
+    @runtimeProperty("ModSettings.displayValues.Kerry", "Kerry Eurodyne")
     public let character: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
@@ -198,6 +199,14 @@ public class GenerativeTextingSystem extends ScriptableService {
             }
         }
 
+        if Equals(s"\(event.GetKey())", "IK_Z") {
+            if (this.chatOpen && !this.isTyping) {
+                this.UndoMessage();
+            } else {
+                return;
+            }
+        }
+
         if Equals(s"\(event.GetKey())", "IK_LeftMouse") {
             if (!this.chatOpen || this.isTyping ) {
                 return;
@@ -232,6 +241,17 @@ public class GenerativeTextingSystem extends ScriptableService {
         GetHttpRequestSystem().ResetConversation();
         this.messageParent.RemoveAllChildren();
         if playSound {
+            this.PlaySound(n"ui_menu_map_pin_off");
+        }
+    }
+
+    // Undo the last message sent from the NPC and V
+    private func UndoMessage() {
+        GetHttpRequestSystem().UndoMessage();
+        let len = this.messageParent.GetNumChildren();
+        if len > 0 {
+            this.messageParent.RemoveChild(this.messageParent.GetWidget(len - 1));
+            this.messageParent.RemoveChild(this.messageParent.GetWidget(len - 2));
             this.PlaySound(n"ui_menu_map_pin_off");
         }
     }
@@ -1241,6 +1261,49 @@ public class GenerativeTextingSystem extends ScriptableService {
         wrapperInputHints.SetTranslation(new Vector2(0.0, 25.0));
         wrapperInputHints.SetChildMargin(new inkMargin(30.0, 0.0, 0.0, 0.0));
         wrapperInputHints.Reparent(rootWrapper);
+
+        let hintUndo = new inkHorizontalPanel();
+        hintUndo.SetName(n"hint_undo");
+        hintUndo.SetAnchor(inkEAnchor.TopRight);
+        hintUndo.SetAnchorPoint(new Vector2(1, 0));
+        hintUndo.SetHAlign(inkEHorizontalAlign.Left);
+        hintUndo.SetVAlign(inkEVerticalAlign.Top);
+        hintUndo.SetFitToContent(true);
+        hintUndo.Reparent(wrapperInputHints);
+
+        let hintUndoIcon = new inkImage();
+        hintUndoIcon.SetName(n"inputIcon");
+        hintUndoIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\input\\icons_keyboard.inkatlas");
+        hintUndoIcon.SetTexturePart(n"kb_z");
+        hintUndoIcon.SetSize(new Vector2(64.0, 64.0));
+        hintUndoIcon.SetTileHAlign(inkEHorizontalAlign.Left);
+        hintUndoIcon.SetTileVAlign(inkEVerticalAlign.Top);
+        hintUndoIcon.SetTintColor(new Color(Cast(94u), Cast(246u), Cast(255u), Cast(255u)));
+        hintUndoIcon.SetAnchor(inkEAnchor.Centered);
+        hintUndoIcon.SetHAlign(inkEHorizontalAlign.Center);
+        hintUndoIcon.SetVAlign(inkEVerticalAlign.Center);
+        hintUndoIcon.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintUndoIcon.BindProperty(n"tintColor", n"MainColors.Blue");
+        hintUndoIcon.Reparent(hintUndo);
+
+        let hintUndoText = new inkText();
+        hintUndoText.SetName(n"action");
+        hintUndoText.SetText("Undo");
+        hintUndoText.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+        hintUndoText.SetFontStyle(n"Semi-Bold");
+        hintUndoText.SetFontSize(38);
+        hintUndoText.SetLetterCase(textLetterCase.UpperCase);
+        hintUndoText.SetTintColor(new Color(Cast(255u), Cast(97u), Cast(89u), Cast(255u)));
+        hintUndoText.SetAnchor(inkEAnchor.TopRight);
+        hintUndoText.SetAnchorPoint(new Vector2(1, 0));
+        hintUndoText.SetVAlign(inkEVerticalAlign.Center);
+        hintUndoText.SetMargin(new inkMargin(7.5, 5.0, 5.0, 0.0));
+        hintUndoText.SetSize(new Vector2(100.0, 32.0));
+        hintUndoText.SetFitToContent(true);
+        hintUndoText.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+        hintUndoText.BindProperty(n"fontStyle", n"MainColors.ReadableSmall");
+        hintUndoText.BindProperty(n"tintColor", n"MainColors.Red");
+        hintUndoText.Reparent(hintUndo);
 
         let hintReset = new inkHorizontalPanel();
         hintReset.SetName(n"hint_reset");
