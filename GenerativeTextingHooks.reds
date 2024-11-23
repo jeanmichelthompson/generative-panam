@@ -26,7 +26,7 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
 
     if contactData != null {
         let contactName = contactData.contactId;
-        ConsoleLog(s"Contact name: \(contactName)");
+        // ConsoleLog(s"Contact name: \(contactName)");
         // Check if the active character is selected
         if Equals(contactName, GetCharacterContactName(GetTextingSystem().character)) {
             if GetTextingSystem() != null {

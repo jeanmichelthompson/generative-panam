@@ -134,6 +134,9 @@ public class HttpRequestSystem extends ScriptableSystem {
     let generations = responseObj.GetKey("generations") as JsonArray;
     let item = generations.GetItem(0u) as JsonObject;
     let text = item.GetKeyString("text");
+    if StrBeginsWith(text, " ") {
+      text = StrRight(text, (StrLen(text) - 1));
+    }
     
     if GetTextingSystem().GetChatOpen() {
       this.ToggleTypingIndicator(false);
