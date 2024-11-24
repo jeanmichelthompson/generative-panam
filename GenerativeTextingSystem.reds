@@ -176,8 +176,9 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         if Equals(s"\(event.GetKey())", "IK_T") {
             if (!this.chatOpen && this.npcSelected) {
-                this.HidePhoneUI();
+                this.HidePhoneUi();
             } else {
+                ConsoleLog(s"Chat open: \(this.chatOpen), NPC selected: \(this.npcSelected)");
                 return;
             }
         }
@@ -315,6 +316,8 @@ public class GenerativeTextingSystem extends ScriptableService {
     // Show the mod chat UI
     private func ShowModChat() {
         this.chatOpen = true;
+        this.parent.ReorderChild(this.chatContainer, 12);
+        this.parent.ReorderChild(this.defaultChatUi, 14);
         GetTextingSystem().ToggleUnread(false);
         this.BuildChatUi();
         this.PlaySound(n"ui_menu_map_pin_created");
@@ -326,17 +329,18 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     // Hide the mod chat UI
-    private func HideModChat() {
+    public func HideModChat() {
+        this.parent.ReorderChild(this.defaultChatUi, 12);
+        this.parent.ReorderChild(this.chatContainer, 14);
         this.chatContainer.RemoveAllChildren();
+        this.chatOpen = false;
     }
 
     // Hide the default phone UI
-    public func HidePhoneUI() {
+    public func HidePhoneUi() {
         if IsDefined(this.defaultPhoneController) {            
             this.defaultPhoneController.DisableContactsInput();
             this.ToggleContactList(false);
-            this.parent.ReorderChild(this.chatContainer, 12);
-            this.parent.ReorderChild(this.defaultChatUi, 14);
             this.ShowModChat();
         } else {
             this.InitializeDefaultPhoneController(true);
@@ -348,8 +352,6 @@ public class GenerativeTextingSystem extends ScriptableService {
         if (IsDefined(this.defaultPhoneController) && IsDefined(this.contactListSlot)) {            
             this.defaultPhoneController.EnableContactsInput();
             this.ToggleContactList(true);
-            this.parent.ReorderChild(this.defaultChatUi, 12);
-            this.parent.ReorderChild(this.chatContainer, 14);
         } else {
             this.InitializeDefaultPhoneController(false);
             this.ShowPhoneUI();
@@ -394,7 +396,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
 
         if hidePhone {
-            this.HidePhoneUI();
+            this.HidePhoneUi();
         }
     }
 

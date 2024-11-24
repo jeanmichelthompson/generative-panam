@@ -15,7 +15,7 @@ protected cb func OnAllElementsSpawned() -> Bool {
     wrappedMethod();
 
     if GetTextingSystem().GetUnread() {
-        GetTextingSystem().HidePhoneUI();
+        GetTextingSystem().HidePhoneUi();
     }
 }
 
@@ -131,6 +131,20 @@ public final func Hide() -> Void {
     if IsDefined(GetTextingSystem()) {
         GetTextingSystem().ToggleNpcSelected(false);
         GetTextingSystem().ToggleIsTyping(false);
+    }
+}
+
+// Toggle flags when other menus are opened
+@wrapMethod(MenuHubLogicController)
+public final func SetActive(isActive: Bool) -> Void {
+    wrappedMethod(isActive);
+
+    ConsoleLog(s"MenuHubLogicController.SetActive: \(isActive)");
+    if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
+        ConsoleLog("Closing chat.");
+        GetTextingSystem().ToggleNpcSelected(false);
+        GetTextingSystem().ToggleIsTyping(false);
+        GetTextingSystem().HideModChat();
     }
 }
 
