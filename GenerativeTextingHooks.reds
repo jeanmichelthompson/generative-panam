@@ -139,9 +139,7 @@ public final func Hide() -> Void {
 public final func SetActive(isActive: Bool) -> Void {
     wrappedMethod(isActive);
 
-    ConsoleLog(s"MenuHubLogicController.SetActive: \(isActive)");
     if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
-        ConsoleLog("Closing chat.");
         GetTextingSystem().ToggleNpcSelected(false);
         GetTextingSystem().ToggleIsTyping(false);
         GetTextingSystem().HideModChat();
