@@ -74,6 +74,8 @@ public class HttpRequestSystem extends ScriptableSystem {
     ConsoleLog("== API POST Response ==");
     if !Equals(response.GetStatus(), 202) {
         ConsoleLog(s"Request failed, status code: \(response.GetStatusCode())");
+        let json = response.GetJson();
+        ConsoleLog(s"\(json.ToString("\t"))");
         return;
     }
     

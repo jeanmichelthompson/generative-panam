@@ -2,11 +2,12 @@
 @wrapMethod(PlayerPuppet)
 protected cb func OnMakePlayerVisibleAfterSpawn(evt: ref<EndGracePeriodAfterSpawn>) -> Bool { 
     wrappedMethod(evt);
-    
-    if IsDefined(GetTextingSystem()) {
-        GetTextingSystem().InitializeSystem();
-    } else {
-        ConsoleLog("Texting system not defined.");
+    if !GameInstance.GetSystemRequestsHandler().IsPreGame() {
+        if IsDefined(GetTextingSystem()) {
+            GetTextingSystem().InitializeSystem();
+        } else {
+            ConsoleLog("Texting system not defined.");
+        }
     }
 }
 

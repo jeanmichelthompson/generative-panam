@@ -41,7 +41,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayValues.River", "River Ward")
     @runtimeProperty("ModSettings.displayValues.Kerry", "Kerry Eurodyne")
     @runtimeProperty("ModSettings.displayValues.Songbird", "Songbird")
-    @runtimeProperty("ModSettings.displayValues.Rogue", "Rogue")
+    @runtimeProperty("ModSettings.displayValues.Rogue", "Rogue Amendiares")
     public let character: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
@@ -73,7 +73,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.description", "Limits the token pool to the K most likely tokens. A lower number is more consistent but less creative.")
     @runtimeProperty("ModSettings.step", "1")
     @runtimeProperty("ModSettings.min", "0")
-    @runtimeProperty("ModSettings.max", "1000")
+    @runtimeProperty("ModSettings.max", "100")
     public let top_k: Int32 = 0;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
@@ -137,21 +137,25 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
         this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
         ModSettings.RegisterListenerToClass(this);
-        this.GetWidgetReferences();
-        this.InitializeDefaultPhoneController(false);
+        this.GetWidgetReferences(53);
+        this.InitializeDefaultPhoneController();
         this.SetupChatContainer();
         this.initialized = true;
         ConsoleLog("Generative Texting System initialized");
     }
 
-    private func GetWidgetReferences() {
+    private func GetWidgetReferences(middleWidgetIndex: Int32) {
         let inkSystem = GameInstance.GetInkSystem();
         let virtualWindow = inkSystem.GetLayer(n"inkHUDLayer").GetVirtualWindow();
         let virtualWindowRoot = virtualWindow.GetWidget(0) as inkCanvas;
-        let hudMiddleWidget = virtualWindowRoot.GetWidget(53) as inkCanvas;
+        let hudMiddleWidget = virtualWindowRoot.GetWidget(middleWidgetIndex) as inkCanvas;
         this.parent = hudMiddleWidget.GetWidget(0) as inkCanvas;
         this.contactListSlot = FindWidgetWithName(this.parent, n"contact_list_slot") as inkCanvas;
         this.defaultChatUi = FindWidgetWithName(this.parent, n"sms_messenger_slot") as inkCanvas;
+        if !IsDefined(this.contactListSlot) {
+            ConsoleLog(s"Contact List Slot not found, checking Hud Middle Widget \(middleWidgetIndex - 1)");
+            this.GetWidgetReferences(middleWidgetIndex - 1);
+        }
     }
 
     // Handle key input events
@@ -344,7 +348,7 @@ public class GenerativeTextingSystem extends ScriptableService {
             this.ToggleContactList(false);
             this.ShowModChat();
         } else {
-            this.InitializeDefaultPhoneController(true);
+            this.InitializeDefaultPhoneController();
         }
     }
 
@@ -354,19 +358,26 @@ public class GenerativeTextingSystem extends ScriptableService {
             this.defaultPhoneController.EnableContactsInput();
             this.ToggleContactList(true);
         } else {
-            this.InitializeDefaultPhoneController(false);
+            this.InitializeDefaultPhoneController();
             this.ShowPhoneUI();
         }
         this.HideModChat();
     }
 
     private func ToggleContactList(value: Bool) {
+        ConsoleLog(s"Toggling contact list: \(value)");
         let contactListRoot = this.contactListSlot.GetWidget(0) as inkCanvas;
         let contactListContainer = contactListRoot.GetWidget(0) as inkCanvas;
         let contactCentralContainer = contactListContainer.GetWidget(1) as inkVerticalPanel;
+        if !IsDefined(contactCentralContainer) {
+            ConsoleLog("Contact list not found.");
+            return;
+        }
         if value {
+            ConsoleLog("Setting contact list to visible.");
             contactCentralContainer.SetVisible(true);
         } else {
+            ConsoleLog("Setting contact list to invisible.");
             contactCentralContainer.SetVisible(false);
         }
     }
@@ -387,17 +398,14 @@ public class GenerativeTextingSystem extends ScriptableService {
     }
 
     // Get a reference to the phone controller
-    private func InitializeDefaultPhoneController(hidePhone: Bool) {
+    private func InitializeDefaultPhoneController() {
         let inkSystem = GameInstance.GetInkSystem();
 
         for controller in inkSystem.GetLayer(n"inkHUDLayer").GetGameControllers() {
             if Equals(s"\(controller.GetClassName())", "NewHudPhoneGameController") {
                 this.defaultPhoneController = controller as NewHudPhoneGameController;
+                ConsoleLog("Phone controller found.");
             }
-        }
-
-        if hidePhone {
-            this.HidePhoneUi();
         }
     }
 
@@ -607,6 +615,7 @@ public class GenerativeTextingSystem extends ScriptableService {
 
     // Build all widgets for the chat UI
     private func BuildChatUi() {
+        ConsoleLog("Building chat UI...");
 
         let modMessengerSlotRoot = new inkCanvas();
         modMessengerSlotRoot.SetName(n"Root");
