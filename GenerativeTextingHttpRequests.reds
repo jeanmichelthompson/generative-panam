@@ -40,11 +40,24 @@ public class HttpRequestSystem extends ScriptableSystem {
   // Post request
   public func TriggerPostRequest(playerMessage: String) {
     this.playerInput = playerMessage;
+    let aiModel = GetTextingSystem().aiModel;
+    switch aiModel {
+      case LLMProvider.StableHorde:
+        this.StableHordePostRequest(playerMessage);
+        break;
+      case LLMProvider.OpenAI:
+        this.OpenAiPostRequest(playerMessage);
+        break;
+    }
+  }
+
+  // Stable Horde Post Request
+  private func StableHordePostRequest(playerMessage: String) {
     let requestDTO = this.CreateTextGenerationRequest(playerMessage);
     let tokens = this.EstimateTokens(requestDTO.prompt);
     let jsonRequest = ToJson(requestDTO);
     
-    let callback = HttpCallback.Create(this, n"OnPostResponse");
+    let callback = HttpCallback.Create(this, n"StableHordePostResponse");
     let headers: array<HttpHeader> = [
         HttpHeader.Create("Content-Type", "application/json"),
         HttpHeader.Create("accept", "application/json"),
@@ -56,32 +69,89 @@ public class HttpRequestSystem extends ScriptableSystem {
     ConsoleLog("== API POST Request ==");
     ConsoleLog(s"\(jsonRequest.ToString("\t"))");
     ConsoleLog(s"== Tokens: \(tokens) ==");
-    this.isGenerating = true;
-    GetTextingSystem().UpdateInputUi();
+    this.ToggleIsGenerating(true);
   }
 
-  // Get request
+  // OpenAI Post Request
+  private func OpenAiPostRequest(playerMessage: String) {
+    if Equals (GetOpenAIApiKey(), "0000000000") {
+      ConsoleLog("OpenAI API key not set. Please update your API key in GenerativeTextingUtilities.reds.");
+      this.HandleMessage("[ERROR CODE: 5002] - YOUR MESSAGE COULD NOT BE SENT. PLEASE UPDATE YOUR API KEY AND TRY AGAIN.");
+      return;
+    }
+
+    let requestDTO = this.BuildOpenAIMessages(playerMessage);
+    let jsonRequest = ToJson(requestDTO);
+    
+    let callback = HttpCallback.Create(this, n"OnOpenAIResponse");
+    let headers: array<HttpHeader> = [
+        HttpHeader.Create("Content-Type", "application/json"),
+        HttpHeader.Create("Authorization", "Bearer " + GetOpenAIApiKey())
+    ];
+
+    AsyncHttpClient.Post(callback, "https://api.openai.com/v1/chat/completions", jsonRequest.ToString(), headers);
+    ConsoleLog("== OpenAI POST Request ==");
+    ConsoleLog(s"\(jsonRequest.ToString("\t"))");
+    this.ToggleIsGenerating(true);
+  }
+
+  // OpenAI Post Response
+  private cb func OnOpenAIResponse(response: ref<HttpResponse>) {
+    if !Equals(response.GetStatus(), HttpStatus.OK) {
+        ConsoleLog(s"Request failed, status code: \(response.GetStatusCode())");
+        this.ToggleIsGenerating(false);
+        return;
+    }
+
+    let json = response.GetJson();
+    if json.IsUndefined() {
+        ConsoleLog("Failed to parse JSON response");
+        this.ToggleIsGenerating(false);
+        return;
+    }
+
+    ConsoleLog("== OpenAI POST Response ==");
+    ConsoleLog(s"\(json.ToString("\t"))");
+
+    let responseObj = json as JsonObject;
+    let choices = responseObj.GetKey("choices") as JsonArray;
+    let firstChoice = choices.GetItem(0u) as JsonObject;
+    let message = firstChoice.GetKey("message") as JsonObject;
+    let text = message.GetKeyString("content");
+
+    if (StrLen(text) > 0) {
+      this.DelayedTyping();
+      this.DelayedMessage(text);
+    } else {
+        ConsoleLog("No text found in OpenAI response.");
+        this.ToggleIsGenerating(false);
+    }
+  }
+
+  // Stable Horde get request
   public func TriggerGetRequest() {
     ConsoleLog("== API GET Request ==");
-    let callback = HttpCallback.Create(this, n"OnGetResponse");
+    let callback = HttpCallback.Create(this, n"StableHordeGetResponse");
     AsyncHttpClient.Get(callback, "https://stablehorde.net/api/v2/generate/text/status/" + this.generationId);
     this.getAttempt += 1;
     ConsoleLog(s"Sending GET request \(this.getAttempt)...");
   }
 
   /// Callbacks ///
-  private cb func OnPostResponse(response: ref<HttpResponse>) {
+  private cb func StableHordePostResponse(response: ref<HttpResponse>) {
     ConsoleLog("== API POST Response ==");
     if !Equals(response.GetStatus(), 202) {
         ConsoleLog(s"Request failed, status code: \(response.GetStatusCode())");
         let json = response.GetJson();
         ConsoleLog(s"\(json.ToString("\t"))");
+        this.ToggleIsGenerating(false);
         return;
     }
     
     let json = response.GetJson();
     if json.IsUndefined() {
         ConsoleLog("Failed to parse JSON response");
+        this.ToggleIsGenerating(false);
         return;
     }
 
@@ -94,7 +164,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     this.DelayedGet();
   }
 
-  private cb func OnGetResponse(response: ref<HttpResponse>) {
+  private cb func StableHordeGetResponse(response: ref<HttpResponse>) {
     ConsoleLog("== API GET Response ==");
     if !Equals(response.GetStatus(), HttpStatus.OK) {
       ConsoleLog(s"Request failed, status code: \(response.GetStatusCode())");
@@ -107,6 +177,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     
     if json.IsUndefined() {
       ConsoleLog("Failed to parse JSON response");
+      this.ToggleIsGenerating(false);
       return;
     }
 
@@ -129,13 +200,16 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     ConsoleLog(s"\(json.ToString("\t"))");
     
-    this.isGenerating = false;
     this.noWorkers = false;
     this.getAttempt = 0;
 
     let generations = responseObj.GetKey("generations") as JsonArray;
     let item = generations.GetItem(0u) as JsonObject;
     let text = item.GetKeyString("text");
+    this.HandleMessage(text);
+  }
+
+  private func HandleMessage(text: String) {
     if StrBeginsWith(text, " ") {
       text = StrRight(text, (StrLen(text) - 1));
     }
@@ -157,6 +231,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     }
 
     this.AppendToHistory(text, false);
+    this.ToggleIsGenerating(false);
   }
 
   // Estimate tokens based on number of words in prompt where 75 words roughly = 100 tokens
@@ -165,7 +240,6 @@ public class HttpRequestSystem extends ScriptableSystem {
     let tokens = (ArraySize(words) * 133)/100;
     return tokens;
   }
-
 
   // Push a notification to the player's HUD
   private func PushNotification(text: String) {
@@ -188,8 +262,8 @@ public class HttpRequestSystem extends ScriptableSystem {
   // Handle failed GET requests
   private func FailedToGet() {
       let text = "[ERROR CODE: 5001 - YOUR MESSAGE COULD NOT BE SENT. PLEASE TRY AGAIN LATER.]";
-      this.isGenerating = false;
       this.getAttempt = 0;
+      this.ToggleIsGenerating(false);
       this.PushNotification(text);
       this.AppendToHistory(text, false);
   }
@@ -203,6 +277,23 @@ public class HttpRequestSystem extends ScriptableSystem {
     delaySystem.DelayCallback(HttpDelayCallback.Create(), delay, isAffectedByTimeDilation);
   }
 
+  private func DelayedTyping() {
+    let delaySystem = GameInstance.GetDelaySystem(GetGameInstance());
+    let delay = RandRangeF(2.0, 4.0);
+    let isAffectedByTimeDilation: Bool = false;
+
+    delaySystem.DelayCallback(TypingDelayCallback.Create(), delay, isAffectedByTimeDilation);
+  }
+
+  // Delay message rendering
+  private func DelayedMessage(text: String) {
+    let delaySystem = GameInstance.GetDelaySystem(GetGameInstance());
+    let delay = RandRangeF(5.0, 9.0);
+    let isAffectedByTimeDilation: Bool = false;
+
+    delaySystem.DelayCallback(MessageDelayCallback.Create(text), delay, isAffectedByTimeDilation);
+  }
+
   // Build the text message by passing in the text author and whether to play an anim
   private func BuildTextMessage(text: String) {
     if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
@@ -210,7 +301,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     }
   }
 
-  private func ToggleTypingIndicator(value: Bool) {
+  public func ToggleTypingIndicator(value: Bool) {
     if (IsDefined(GetTextingSystem())) {
       GetTextingSystem().ToggleTypingIndicator(value);
     }
@@ -251,6 +342,12 @@ public class HttpRequestSystem extends ScriptableSystem {
     if ArraySize(this.npcResponses) > 0 {
       ArrayPop(this.npcResponses);
     }
+  }
+
+  // Toggle generation state
+  public func ToggleIsGenerating(value: Bool) {
+    this.isGenerating = value;
+    GetTextingSystem().UpdateInputUi();
   }
 
   // Generate the prompt using the arrays
@@ -331,6 +428,26 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     return requestDTO;
   }
+
+  private func BuildOpenAIMessages(playerMessage: String) -> ref<OpenAIRequestDTO> {
+    let requestDTO = new OpenAIRequestDTO();
+    requestDTO.model = "gpt-4o-mini";
+    
+    let messagesArray: array<ref<OpenAIMessageDTO>>;
+
+    let systemMessage = new OpenAIMessageDTO();
+    systemMessage.role = "system";
+    systemMessage.content = "";
+    ArrayPush(messagesArray, systemMessage);
+
+    let userMessage = new OpenAIMessageDTO();
+    userMessage.role = "user";
+    userMessage.content = this.GeneratePrompt(playerMessage);
+    ArrayPush(messagesArray, userMessage);
+
+    requestDTO.messages = messagesArray;
+    return requestDTO;
+  }
 } 
 
 public class TextGenerationRequestDTO {
@@ -372,6 +489,16 @@ public class TextGenerationParamsDTO {
     public let frmttriminc: Bool;
 }
 
+public class OpenAIRequestDTO {
+    public let model: String;
+    public let messages: array<ref<OpenAIMessageDTO>>;
+}
+
+public class OpenAIMessageDTO {
+    public let role: String;
+    public let content: String;
+}
+
 // Delay callback for when a generation is not finished yet
 public class HttpDelayCallback extends DelayCallback {
 
@@ -382,6 +509,37 @@ public class HttpDelayCallback extends DelayCallback {
 
   public static func Create() -> ref<HttpDelayCallback> {
     let self = new HttpDelayCallback();
+
+    return self;
+  }
+}
+
+// Delay callback for rendering messages
+public class MessageDelayCallback extends DelayCallback {
+  public let text: String;
+
+  public func Call() {
+    let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+    HttpRequestSystem.HandleMessage(this.text);
+  }
+
+  public static func Create(text: String) -> ref<MessageDelayCallback> {
+    let self = new MessageDelayCallback();
+    self.text = text;
+    return self;
+  }
+}
+
+// Delay callback for showing typing indicator
+public class TypingDelayCallback extends DelayCallback {
+
+  public func Call() {
+    let HttpRequestSystem = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"HttpRequestSystem") as HttpRequestSystem;
+    HttpRequestSystem.ToggleTypingIndicator(true);
+  }
+
+  public static func Create() -> ref<TypingDelayCallback> {
+    let self = new TypingDelayCallback();
 
     return self;
   }

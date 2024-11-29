@@ -45,6 +45,13 @@ public class GenerativeTextingSystem extends ScriptableService {
     public let character: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
+    @runtimeProperty("ModSettings.displayName", "Model")
+    @runtimeProperty("ModSettings.description", "Controls the LLM powering the character.")
+    @runtimeProperty("ModSettings.displayValues.StableHorde", "Stable Horde")
+    @runtimeProperty("ModSettings.displayValues.OpenAI", "ChatGPT")
+    public let aiModel: LLMProvider = LLMProvider.StableHorde;
+
+    @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Language (Experimental)")
     @runtimeProperty("ModSettings.description", "Controls the language of the generated text. Does not work with 100% consistency but could be worse.")
     @runtimeProperty("ModSettings.displayValues.English", "English")
@@ -141,6 +148,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.InitializeDefaultPhoneController();
         this.SetupChatContainer();
         this.initialized = true;
+        GetHttpRequestSystem().ToggleIsGenerating(false);
         ConsoleLog("Generative Texting System initialized");
     }
 

@@ -1,6 +1,10 @@
 // Replace this with your own API key from https://stablehorde.net/register for faster response times
 public func GetApiKey() -> String {
-    return "Ot8coxPR9ykkuWOnpT-WYQ";
+    return "0000000000";
+}
+
+public func GetOpenAIApiKey() -> String {
+    return "0000000000";
 }
 
 // Get the character's full display name
@@ -159,6 +163,11 @@ enum CharacterSetting {
 enum PlayerGender {
     Male = 0,
     Female = 1
+}
+
+enum LLMProvider {
+    StableHorde = 0,
+    OpenAI = 1
 }
 
 enum PlayerLanguage {
