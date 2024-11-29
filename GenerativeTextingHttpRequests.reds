@@ -74,7 +74,7 @@ public class HttpRequestSystem extends ScriptableSystem {
 
   // OpenAI Post Request
   private func OpenAiPostRequest(playerMessage: String) {
-    if Equals (GetOpenAIApiKey(), "0000000000") {
+    if Equals (GetOpenAiApiKey(), "0000000000") {
       ConsoleLog("OpenAI API key not set. Please update your API key in GenerativeTextingUtilities.reds.");
       this.HandleMessage("[ERROR CODE: 5002] - YOUR MESSAGE COULD NOT BE SENT. PLEASE UPDATE YOUR API KEY AND TRY AGAIN.");
       return;
@@ -86,7 +86,7 @@ public class HttpRequestSystem extends ScriptableSystem {
     let callback = HttpCallback.Create(this, n"OnOpenAIResponse");
     let headers: array<HttpHeader> = [
         HttpHeader.Create("Content-Type", "application/json"),
-        HttpHeader.Create("Authorization", "Bearer " + GetOpenAIApiKey())
+        HttpHeader.Create("Authorization", "Bearer " + GetOpenAiApiKey())
     ];
 
     AsyncHttpClient.Post(callback, "https://api.openai.com/v1/chat/completions", jsonRequest.ToString(), headers);
