@@ -43,6 +43,8 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayValues.Kerry", "Kerry Eurodyne")
     @runtimeProperty("ModSettings.displayValues.Songbird", "Songbird")
     @runtimeProperty("ModSettings.displayValues.Rogue", "Rogue Amendiares")
+    @runtimeProperty("ModSettings.displayValues.Viktor", "Viktor Vektor")
+    @runtimeProperty("ModSettings.displayValues.Misty", "Misty Olszewski")
     public let character: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
