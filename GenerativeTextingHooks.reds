@@ -147,6 +147,22 @@ public final func SetActive(isActive: Bool) -> Void {
     }
 }
 
+// Toggle flags when the player enters combat
+@wrapMethod(PlayerPuppet)
+protected cb func OnCombatStateChanged(newState: Int32) -> Bool {  // newState uses the values specified in enum PlayerCombatState
+    let r: Bool = wrappedMethod(newState);
+    
+    if Equals(newState, 1) {
+        if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
+            GetTextingSystem().ToggleNpcSelected(false);
+            GetTextingSystem().ToggleIsTyping(false);
+            GetTextingSystem().HideModChat();
+        }
+    }
+
+    return r;
+}
+
 // Push a custom SMS notification based on the selected character and LLM response
 @addMethod(NewHudPhoneGameController)
 public final func PushCustomSMSNotification(text: String) -> Void {

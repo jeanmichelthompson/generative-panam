@@ -25,6 +25,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     private let typingIndicator: wref<inkFlex>;
     private let lastActiveCharacter: CharacterSetting = CharacterSetting.Panam;
     private let unread: Bool = false;
+    private let disabled: Bool = false;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
     @runtimeProperty("ModSettings.displayName", "Player Gender")
@@ -161,8 +162,15 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.contactListSlot = FindWidgetWithName(this.parent, n"contact_list_slot") as inkCanvas;
         this.defaultChatUi = FindWidgetWithName(this.parent, n"sms_messenger_slot") as inkCanvas;
         if !IsDefined(this.contactListSlot) {
+            if middleWidgetIndex < 45 {
+                ConsoleLog("Contact List Slot not found, giving up.");
+                this.disabled = true;
+                return;
+            }
             ConsoleLog(s"Contact List Slot not found, checking Hud Middle Widget \(middleWidgetIndex - 1)");
             this.GetWidgetReferences(middleWidgetIndex - 1);
+        } else {
+            this.disabled = false;
         }
     }
 
@@ -188,6 +196,10 @@ public class GenerativeTextingSystem extends ScriptableService {
         }
 
         if Equals(s"\(event.GetKey())", "IK_T") {
+            if this.disabled {
+                ConsoleLog("Generative Texting System is disabled. Please contact the mod author for support.");
+                return;
+            }
             if (!this.chatOpen && this.npcSelected) {
                 this.HidePhoneUi();
             } else {
