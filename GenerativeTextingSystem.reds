@@ -44,7 +44,8 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayValues.Songbird", "Songbird")
     @runtimeProperty("ModSettings.displayValues.Rogue", "Rogue Amendiares")
     @runtimeProperty("ModSettings.displayValues.Viktor", "Viktor Vektor")
-    @runtimeProperty("ModSettings.displayValues.Misty", "Misty Olszewski")
+    // @runtimeProperty("ModSettings.displayValues.Misty", "Misty Olszewski")
+    @runtimeProperty("ModSettings.displayValues.Takemura", "Goro Takemura")
     public let character: CharacterSetting = CharacterSetting.Panam;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
@@ -147,7 +148,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.callbackSystem.UnregisterCallback(n"Input/Key", this, n"OnKeyInput");
         this.callbackSystem.UnregisterCallback(n"Input/Axis", this, n"OnAxisInput");
         ModSettings.RegisterListenerToClass(this);
-        this.GetWidgetReferences(53);
+        this.GetWidgetReferences(54);
         this.InitializeDefaultPhoneController();
         this.SetupChatContainer();
         this.initialized = true;
