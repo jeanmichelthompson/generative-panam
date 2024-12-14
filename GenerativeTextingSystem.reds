@@ -153,6 +153,7 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.SetupChatContainer();
         this.initialized = true;
         GetHttpRequestSystem().ToggleIsGenerating(false);
+        GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
         ConsoleLog("Generative Texting System initialized");
     }
 
