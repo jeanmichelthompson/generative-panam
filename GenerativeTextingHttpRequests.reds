@@ -43,7 +43,7 @@ public class HttpRequestSystem extends ScriptableSystem {
       return;
     }
   }
-  
+
   public func WriteLastExchangeToFile(characterName: String) {
 	let characterFile = this.m_storage.GetFile(characterName+".txt");
 
@@ -56,11 +56,15 @@ public class HttpRequestSystem extends ScriptableSystem {
 	let lastExchangeString = "";
 	
 	if ArraySize(this.vMessages) >= numResponses {
-		lastExchangeString += this.vMessages[numResponses-1] + "\n";
+    let lastMessage = this.vMessages[numResponses-1];
+    let sanitizedText = StrReplaceAll(lastMessage, "\n", " ");
+		lastExchangeString += sanitizedText  + "\n";
 	}
 	
 	if numResponses > 0 {
-		lastExchangeString += this.npcResponses[numResponses-1] + "\n";
+    let lastMessage = this.npcResponses[numResponses-1];
+    let sanitizedText = StrReplaceAll(lastMessage, "\n", " ");
+		lastExchangeString += sanitizedText  + "\n";
 	}
 	
 	characterFile.WriteText(lastExchangeString, FileSystemWriteMode.Append);
