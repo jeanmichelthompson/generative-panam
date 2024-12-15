@@ -31,6 +31,60 @@ public func GetCharacterLocalizedName(character: CharacterSetting) -> String{
     }
 }
 
+public func isContactValidForAI(character: String) -> Bool{
+    switch character {
+        case "panam":
+            return true;
+        case "judy":
+            return true;
+        case "river_ward":
+            return true;
+        case "kerry_eurodyne":
+            return true;
+        case "songbird":
+            return true;
+        case "rogue":
+            return true;
+        case "victor_vector":
+            return true;
+        case "takemura":
+            return true;
+        //case mod_misty
+        //  return true;
+        case "delamain":
+            return true;
+        default:
+            return false;
+    }
+
+}
+
+public func GetCharacterSettingByContactName(character: String) -> CharacterSetting{
+    switch character {
+        case "panam":
+            return CharacterSetting.Panam;
+        case "judy":
+            return CharacterSetting.Judy;
+        case "river_ward":
+            return CharacterSetting.River;
+        case "kerry_eurodyne":
+            return CharacterSetting.Kerry;
+        case "songbird":
+            return CharacterSetting.Songbird;
+        case "rogue":
+            return  CharacterSetting.Rogue;
+        case "victor_vector":
+            return  CharacterSetting.Viktor;
+        case "takemura":
+            return  CharacterSetting.Takemura;
+        //case mod_misty
+        //  return  CharacterSetting.Misty;
+        default:
+            return CharacterSetting.Panam;
+    }
+
+}
+
 // Get the character's name for the contact list widget
 public func GetCharacterContactName(character: CharacterSetting) -> String {
     switch character {
@@ -157,7 +211,7 @@ public func GetGuidelines() -> String {
     let aiModel = GetTextingSystem().aiModel;
     switch aiModel {
       case LLMProvider.StableHorde:
-        return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Let V direct the conversation, avoid changing the subject. Only reply with only the text/dialogue of the next message in the conversation. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
+        return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Use short, direct sentences, with casual slang where it fits. Don't be cringe. Keep your response to two or three sentences maximum. Always keep the conversation going so that it is never-ending. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Let V direct the conversation, avoid changing the subject. Only reply with only the text/dialogue of the next message in the conversation. Respond with no newline. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
       case LLMProvider.OpenAI:
         return s"\nImportant: Only ever speak in the first person, never break character. Only use valid ASCII characters. You are texting on the phone. Try to keep the conversation going but don't feel like you have to end every message with a question, just keep things flowing naturally. Try not to repeat yourself too much. Never speak for or as V. Avoid bringing up other character's or places and avoid making up plots points like missions, etc. unless V brings them up first. Only reply with only the text/dialogue of the next message in the conversation. For context, the current time is \(GetCurrentTime()). " + GetPlayerLanguage() + "<|eot_id>\n\n";
     }   

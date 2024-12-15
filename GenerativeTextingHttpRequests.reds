@@ -94,6 +94,8 @@ public class HttpRequestSystem extends ScriptableSystem {
   
   public func ReadChatLogFromFile(characterName: String) {
 
+  this.ResetConversation();
+
 	let characterFile = this.m_storage.GetFile(characterName+".txt");
 	
 	let cLines = characterFile.ReadAsLines();

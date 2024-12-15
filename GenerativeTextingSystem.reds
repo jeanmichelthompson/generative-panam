@@ -31,7 +31,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayName", "Player Gender")
     @runtimeProperty("ModSettings.description", "Controls the gender you will be referred to as.")
     @runtimeProperty("ModSettings.displayValues.Male", "Male")
-    @runtimeProperty("ModSettings.displayValues.Female", "Female")
+    @runtimeProperty("ModSettings.displayDValues.Female", "Female")
     public let gender: PlayerGender = PlayerGender.Male;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
@@ -290,7 +290,6 @@ public class GenerativeTextingSystem extends ScriptableService {
     public func ToggleNpcSelected(value: Bool) {
         if !this.initialized {
             this.InitializeSystem();
-            GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
         } 
 
         this.npcSelected = value;
@@ -299,7 +298,6 @@ public class GenerativeTextingSystem extends ScriptableService {
             this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true)
                 .AddTarget(InputTarget.Key(EInputKey.IK_T));
             if NotEquals(this.lastActiveCharacter, this.character) {
-                this.ResetConversation(false);
                 this.lastActiveCharacter = this.character;
             }
         } else {

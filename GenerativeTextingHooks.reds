@@ -29,6 +29,22 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
         let contactName = contactData.contactId;
         ConsoleLog(s"Contact name: \(contactName)");
         // Check if the active character is selected
+
+        if GetHttpRequestSystem().isGenerating {
+            return;
+        }
+
+        if !isContactValidForAI(contactName) {
+                if GetTextingSystem() != null {
+                GetTextingSystem().ToggleNpcSelected(false);
+            }
+            return;
+        } 
+
+        if !Equals(contactName, GetCharacterContactName(GetTextingSystem().character)) {
+            GetTextingSystem().character = GetCharacterSettingByContactName(contactName);
+        }
+
         if Equals(contactName, GetCharacterContactName(GetTextingSystem().character)) {
             if GetTextingSystem() != null {
                 GetTextingSystem().ToggleNpcSelected(true);
@@ -115,10 +131,6 @@ private final func RefreshInputHints(contactData: wref<ContactData>) -> Void {
                 }
             } else {
                 ConsoleLog("contactListWidget not found.");
-            }
-        } else {
-            if GetTextingSystem() != null {
-                GetTextingSystem().ToggleNpcSelected(false);
             }
         }
     }
