@@ -153,7 +153,6 @@ public class GenerativeTextingSystem extends ScriptableService {
         this.SetupChatContainer();
         this.initialized = true;
         GetHttpRequestSystem().ToggleIsGenerating(false);
-        GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
         ConsoleLog("Generative Texting System initialized");
     }
 
@@ -291,10 +290,12 @@ public class GenerativeTextingSystem extends ScriptableService {
     public func ToggleNpcSelected(value: Bool) {
         if !this.initialized {
             this.InitializeSystem();
+            GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
         } 
 
         this.npcSelected = value;
         if this.npcSelected {
+            GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
             this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true)
                 .AddTarget(InputTarget.Key(EInputKey.IK_T));
             if NotEquals(this.lastActiveCharacter, this.character) {
