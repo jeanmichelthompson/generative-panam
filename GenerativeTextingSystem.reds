@@ -31,7 +31,7 @@ public class GenerativeTextingSystem extends ScriptableService {
     @runtimeProperty("ModSettings.displayName", "Player Gender")
     @runtimeProperty("ModSettings.description", "Controls the gender you will be referred to as.")
     @runtimeProperty("ModSettings.displayValues.Male", "Male")
-    @runtimeProperty("ModSettings.displayDValues.Female", "Female")
+    @runtimeProperty("ModSettings.displayValues.Female", "Female")
     public let gender: PlayerGender = PlayerGender.Male;
 
     @runtimeProperty("ModSettings.mod", "Generative Texting")
