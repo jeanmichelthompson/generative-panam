@@ -1,9 +1,13 @@
 import Codeware.*
 import RedData.Json.*
 import RedHttpClient.*
+import RedFileSystem.*
+
+
 
 public class HttpRequestSystem extends ScriptableSystem {
   private let m_callbackSystem: wref<CallbackSystem>;
+  private let m_storage: wref<FileSystemStorage>;
   private let generationId: String;
   private let playerInput: String;
   private let timeArray: array<String>;
@@ -18,7 +22,9 @@ public class HttpRequestSystem extends ScriptableSystem {
 
   /// Lifecycle ///
 
+
   private func OnAttach() {
+	this.m_storage = GetGenerativeTextingEnv().GetStorage();
     this.m_callbackSystem = GameInstance.GetCallbackSystem();
     this.m_callbackSystem.RegisterCallback(n"Session/Ready", this, n"OnSessionReady");
   }
@@ -26,6 +32,7 @@ public class HttpRequestSystem extends ScriptableSystem {
   private func OnDetach() {
     this.m_callbackSystem.UnregisterCallback(n"Session/Ready", this, n"OnSessionReady");
     this.m_callbackSystem = null;
+	this.m_storage = null;
   }
 
   /// Game events ///
@@ -37,6 +44,79 @@ public class HttpRequestSystem extends ScriptableSystem {
     }
   }
 
+  public func WriteLastExchangeToFile(characterName: String) {
+	let characterFile = this.m_storage.GetFile(characterName+".txt");
+
+    if !IsDefined(characterFile) {
+      return;
+	  
+    }
+
+	let numResponses = ArraySize(this.npcResponses);
+	let lastExchangeString = "";
+	
+	if ArraySize(this.vMessages) >= numResponses {
+    let lastMessage = this.vMessages[numResponses-1];
+    let sanitizedText = StrReplaceAll(lastMessage, "\n", " ");
+		lastExchangeString += sanitizedText  + "\n";
+	}
+	
+	if numResponses > 0 {
+    let lastMessage = this.npcResponses[numResponses-1];
+    let sanitizedText = StrReplaceAll(lastMessage, "\n", " ");
+		lastExchangeString += sanitizedText  + "\n";
+	}
+	
+	characterFile.WriteText(lastExchangeString, FileSystemWriteMode.Append);
+	
+    ConsoleLog(characterName+" chat logs written to file.");
+  } 
+  
+  public func LoadChatMessageInUI(text: String, fromV: Bool) {
+		 
+	if StrBeginsWith(text, " ") || StrBeginsWith(text, "\t"){
+      text = StrRight(text, (StrLen(text) - 1));
+    }
+    
+    if GetTextingSystem().GetChatOpen() {
+      this.ToggleTypingIndicator(false);
+      if StrLen(text) > 1000 {
+        let firstHalf = StrLeft(text, 1000);
+        let secondHalf = StrRight(text, (StrLen(text) - 1000));
+        this.BuildMessageString(firstHalf,fromV);
+        this.BuildMessageString(secondHalf, fromV);
+      } else {
+        this.BuildMessageString(text, fromV);
+      }
+      GetTextingSystem().UpdateInputUi();
+    } 
+  } 
+  
+  public func ReadChatLogFromFile(characterName: String) {
+
+  this.ResetConversation();
+
+	let characterFile = this.m_storage.GetFile(characterName+".txt");
+	
+	let cLines = characterFile.ReadAsLines();
+	let fromV = true;
+    for line in cLines {
+		
+		this.AppendToHistory(line, fromV);
+		this.LoadChatMessageInUI(line, fromV);
+		fromV = !fromV;
+    }
+	
+	ConsoleLog(characterName+" chat logs loaded from file.");
+	  
+  }
+  
+  private func BuildMessageString(text: String, fromV: Bool) {
+    if (IsDefined(GetTextingSystem()) && GetTextingSystem().GetChatOpen()) {
+      GetTextingSystem().BuildMessage(text, fromV, true);
+    }
+  }
+ 
   // Post request
   public func TriggerPostRequest(playerMessage: String) {
     this.playerInput = playerMessage;
@@ -208,9 +288,10 @@ public class HttpRequestSystem extends ScriptableSystem {
     let text = item.GetKeyString("text");
     this.HandleMessage(text);
   }
+  
 
   private func HandleMessage(text: String) {
-    if StrBeginsWith(text, " ") {
+    if StrBeginsWith(text, " ") || StrBeginsWith(text, "\t"){
       text = StrRight(text, (StrLen(text) - 1));
     }
     
@@ -232,6 +313,7 @@ public class HttpRequestSystem extends ScriptableSystem {
 
     this.AppendToHistory(text, false);
     this.ToggleIsGenerating(false);
+	this.WriteLastExchangeToFile(GetCharacterLocalizedName(GetTextingSystem().character));
   }
 
   // Estimate tokens based on number of words in prompt where 75 words roughly = 100 tokens

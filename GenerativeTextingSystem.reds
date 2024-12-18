@@ -294,10 +294,10 @@ public class GenerativeTextingSystem extends ScriptableService {
 
         this.npcSelected = value;
         if this.npcSelected {
+            GetHttpRequestSystem().ReadChatLogFromFile(GetCharacterLocalizedName(GetTextingSystem().character));
             this.callbackSystem.RegisterCallback(n"Input/Key", this, n"OnKeyInput", true)
                 .AddTarget(InputTarget.Key(EInputKey.IK_T));
             if NotEquals(this.lastActiveCharacter, this.character) {
-                this.ResetConversation(false);
                 this.lastActiveCharacter = this.character;
             }
         } else {

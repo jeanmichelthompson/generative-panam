@@ -31,6 +31,60 @@ public func GetCharacterLocalizedName(character: CharacterSetting) -> String{
     }
 }
 
+public func isContactValidForAI(character: String) -> Bool{
+    switch character {
+        case "panam":
+            return true;
+        case "judy":
+            return true;
+        case "river_ward":
+            return true;
+        case "kerry_eurodyne":
+            return true;
+        case "songbird":
+            return true;
+        case "rogue":
+            return true;
+        case "victor_vector":
+            return true;
+        case "takemura":
+            return true;
+        //case mod_misty
+        //  return true;
+        case "delamain":
+            return true;
+        default:
+            return false;
+    }
+
+}
+
+public func GetCharacterSettingByContactName(character: String) -> CharacterSetting{
+    switch character {
+        case "panam":
+            return CharacterSetting.Panam;
+        case "judy":
+            return CharacterSetting.Judy;
+        case "river_ward":
+            return CharacterSetting.River;
+        case "kerry_eurodyne":
+            return CharacterSetting.Kerry;
+        case "songbird":
+            return CharacterSetting.Songbird;
+        case "rogue":
+            return  CharacterSetting.Rogue;
+        case "victor_vector":
+            return  CharacterSetting.Viktor;
+        case "takemura":
+            return  CharacterSetting.Takemura;
+        //case mod_misty
+        //  return  CharacterSetting.Misty;
+        default:
+            return CharacterSetting.Panam;
+    }
+
+}
+
 // Get the character's name for the contact list widget
 public func GetCharacterContactName(character: CharacterSetting) -> String {
     switch character {
